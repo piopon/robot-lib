@@ -114,8 +114,8 @@ MODULE libCasts
         IF Present(posPrecision) posAcc:=posPrecision;
         IF Present(rotPrecision) rotAcc:=rotPrecision;
         !checking if inputs is ok
-        IF numInRange(posAcc,0,6) THEN
-            IF numInRange(rotAcc,0,6) THEN
+        IF numInsideSet(posAcc,0,6) THEN
+            IF numInsideSet(rotAcc,0,6) THEN
                 !robot position (XYZ)
                 position.trans.x:=Round(position.trans.x\Dec:=posAcc);
                 position.trans.y:=Round(position.trans.y\Dec:=posAcc);
@@ -177,8 +177,8 @@ MODULE libCasts
         IF Present(posPrecision) posAcc:=posPrecision;
         IF Present(rotPrecision) rotAcc:=rotPrecision;
         !checking if inputs is ok
-        IF numInRange(posAcc,0,6) THEN
-            IF numInRange(rotAcc,0,6) THEN
+        IF numInsideSet(posAcc,0,6) THEN
+            IF numInsideSet(rotAcc,0,6) THEN
                 !robtarget pos (XYZ)
                 robt.trans.x:=Round(robt.trans.x\Dec:=posAcc);
                 robt.trans.y:=Round(robt.trans.y\Dec:=posAcc);
@@ -197,7 +197,7 @@ MODULE libCasts
                     robt.robconf:=robt.robconf;
                     !checking optional argument (extPrecision)
                     IF Present(extPrecision) extAcc:=extPrecision;
-                    IF numInRange(extAcc,0,6) THEN
+                    IF numInsideSet(extAcc,0,6) THEN
                         !external axes (EXTAX)
                         robt.extax.eax_a:=Round(robt.extax.eax_a\Dec:=extAcc);
                         robt.extax.eax_b:=Round(robt.extax.eax_b\Dec:=extAcc);
@@ -281,8 +281,8 @@ MODULE libCasts
         IF Present(posPrecision) posAcc:=posPrecision;
         IF Present(rotPrecision) rotAcc:=rotPrecision;
         !checking if inputs is ok
-        IF numInRange(posAcc,0,6) THEN
-            IF numInRange(rotAcc,0,6) THEN
+        IF numInsideSet(posAcc,0,6) THEN
+            IF numInsideSet(rotAcc,0,6) THEN
                 !wobjdata robhold - NO CHANGE
                 wobj.robhold:=wobj.robhold;
                 !wobjdata ufprog - NO CHANGE
