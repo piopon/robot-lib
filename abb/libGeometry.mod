@@ -287,7 +287,7 @@ MODULE libGeometry
             vecDist{axisZ}:=Abs(vecAxis{axisZ}.z);
         ENDIF
         !the biggest element in table is the nearest to reference
-        result:=searchInTable(vecDist\biggest\elementNo);
+        result:=tableNumFind(vecDist\biggest\elementNo);
 
         RETURN result;
     ENDFUNC
@@ -313,7 +313,7 @@ MODULE libGeometry
             ENDIF
         ENDFOR
         !the closest axis has the smallest angle
-        result:=searchInTable(angles\smallest\elementNo);
+        result:=tableNumFind(angles\smallest\elementNo);
 
         RETURN result;
     ENDFUNC
