@@ -9,6 +9,10 @@ MODULE libCasts
     ! Contributors:                                                     !
     !*******************************************************************!
 
+    !===================================================
+    !================  ABB TYPES  ======================
+    !===================================================    
+
     !function converting bool to byte
     ! ret: byte = converted byte
     ! arg: boolean - bool to convert
@@ -328,4 +332,62 @@ MODULE libCasts
 
         RETURN result;
     ENDFUNC
+
+    !===================================================
+    !==============  NON ABB TYPES  ====================
+    !===================================================
+
+    !function converting axis to vector
+    ! ret: pos = reference vector
+    ! arg: axisNo - axis number to convert
+    FUNC pos axisToVec(num axisNo)
+        VAR pos result;
+
+        IF axisNo=axisX THEN
+            result:=[1,0,0];
+        ELSEIF axisNo=axisY THEN
+            result:=[0,1,0];
+        ELSEIF axisNo=axisZ THEN
+            result:=[0,0,1];
+        ELSE
+            ErrWrite "ERROR::axisToVec","Dont know what is axis no."+NumToStr(axisNo,0)+"!"\RL2:="Accecpted axes: axisX = 1, axisY = 2, axisZ = 3.";
+        ENDIF
+
+        RETURN result;
+    ENDFUNC
+    
+    !function translating error number to string (may be needed in ERROR recovery)
+    ! ret: string = error description
+    ! arg: errorNo - error number
+    FUNC string errorToString(ERRNUM errorNo)
+        VAR string result;
+
+        IF errorNo=ERR_ACC_TOO_LOW THEN
+            result:="Too low acc/dec [instruction: PathAccLim/WorldAccLim]";
+        ELSEIF errorNo=ERR_ALIASIO_DEF THEN
+            result:="Signal is not declared [instruction: AliasIO]";
+        ELSEIF errorNo=ERR_ALIASIO_TYPE THEN
+            result:="Signal types are not the same [instruction: AliasIO]";
+        ELSEIF errorNo=ERR_ALRDYCNT THEN
+            result:="Interrupt is already connected [instruction: CONNECT]";
+        ELSEIF errorNo=ERR_ALRDY_MOVING THEN
+            result:="Robot is already moving [instruction: StartMove/StartMoveRetry]";
+        ELSEIF errorNo=ERR_AO_LIM THEN
+            result:="Analog signal value outside limit [instruction: AO...]";
+        ELSEIF errorNo=ERR_ARGDUPCND THEN
+            result:="More than one present conditional argument for the same parameter.";
+        ELSEIF errorNo=ERR_ARGNAME THEN
+            result:="Argument is an expression, non existent or type switch [instruction: ArgName]";
+        ELSEIF errorNo=ERR_ARGNOTPER THEN
+            result:="Argument is NOT a persistent reference";
+        ELSEIF errorNo=ERR_ARGNOTVAR THEN
+            result:="Argument is NOT a variable reference";
+        ELSEIF errorNo=ERR_ACTIV_PROF THEN
+            result:="Error in activate profile data";
+        ELSE
+            result:="Unknown error - add descr in library!";
+        ENDIF
+
+        RETURN result;
+    ENDFUNC    
 ENDMODULE
