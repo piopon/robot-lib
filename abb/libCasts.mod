@@ -117,30 +117,10 @@ MODULE libCasts
         !checking optional arguments (posPrecision & rotPrecision)
         IF Present(posPrecision) posAcc:=posPrecision;
         IF Present(rotPrecision) rotAcc:=rotPrecision;
-        !checking if inputs is ok
-        IF numInsideSet(posAcc,0,6) THEN
-            IF numInsideSet(rotAcc,0,6) THEN
-                !robot position (XYZ)
-                position.trans.x:=Round(position.trans.x\Dec:=posAcc);
-                position.trans.y:=Round(position.trans.y\Dec:=posAcc);
-                position.trans.z:=Round(position.trans.z\Dec:=posAcc);
-                !robot orientation (Q)
-                position.rot.q1:=Round(position.rot.q1\Dec:=rotAcc);
-                position.rot.q2:=Round(position.rot.q2\Dec:=rotAcc);
-                position.rot.q3:=Round(position.rot.q3\Dec:=rotAcc);
-                position.rot.q4:=Round(position.rot.q4\Dec:=rotAcc);
-                !converting rounded pose to string
-                result:=ValToStr(position);
-            ELSE
-                !wrong optional argument rotPrecision
-                ErrWrite "ERROR::poseToString","Wrong argument value: rotPrecision = "+NumToStr(rotAcc,0),\RL2:="Correct value must be between [0 ; 6]";
-                result:=ValToStr(zeroPose);
-            ENDIF
-        ELSE
-            !wrong optional argument posPrecision
-            ErrWrite "ERROR::poseToString","Wrong argument value: posPrecision = "+NumToStr(posAcc,0),\RL2:="Correct value must be between [0 ; 6]";
-            result:=ValToStr(zeroPose);
-        ENDIF
+        !rounding pose [trans (XYZ) and rot (Q)]
+        position:=roundPose(position\posDec:=posAcc\oriDec:=rotAcc);
+        !converting rounded pose to string
+        result:=ValToStr(position);
 
         RETURN result;
     ENDFUNC
@@ -167,7 +147,7 @@ MODULE libCasts
     !function converting robtarget to string
     ! ret: string = converted string
     ! arg: robt - robtarget to convert
-    ! arg: onlyPose - output only robtarget pose (DEFAULT)
+    ! arg: onlyPose - output only robtarget pose (no need to cast)
     ! arg: posPrecision - decimal points in pos element (robt.trans)
     ! arg: rotPrecision - decimal points in orient element (robt.rot)
     ! arg: extPrecision - decimal points in external axis element (robt.extax)
@@ -177,55 +157,19 @@ MODULE libCasts
         VAR num rotAcc:=3;
         VAR num extAcc:=1;
 
-        !checking optional arguments (posPrecision & rotPrecision)
+        !checking optional arguments (posPrecision, rotPrecision, extPrecision)
         IF Present(posPrecision) posAcc:=posPrecision;
         IF Present(rotPrecision) rotAcc:=rotPrecision;
-        !checking if inputs is ok
-        IF numInsideSet(posAcc,0,6) THEN
-            IF numInsideSet(rotAcc,0,6) THEN
-                !robtarget pos (XYZ)
-                robt.trans.x:=Round(robt.trans.x\Dec:=posAcc);
-                robt.trans.y:=Round(robt.trans.y\Dec:=posAcc);
-                robt.trans.z:=Round(robt.trans.z\Dec:=posAcc);
-                !robtarget orient (Q)
-                robt.rot.q1:=Round(robt.rot.q1\Dec:=rotAcc);
-                robt.rot.q2:=Round(robt.rot.q2\Dec:=rotAcc);
-                robt.rot.q3:=Round(robt.rot.q3\Dec:=rotAcc);
-                robt.rot.q4:=Round(robt.rot.q4\Dec:=rotAcc);
-                !check if user want all data
-                IF Present(onlyPose) THEN
-                    !user wants only pose components - converting rounded pose...
-                    result:=ValToStr(robtToPose(robt));
-                ELSE
-                    !robtarget configuration - NO CHANGE
-                    robt.robconf:=robt.robconf;
-                    !checking optional argument (extPrecision)
-                    IF Present(extPrecision) extAcc:=extPrecision;
-                    IF numInsideSet(extAcc,0,6) THEN
-                        !external axes (EXTAX)
-                        robt.extax.eax_a:=Round(robt.extax.eax_a\Dec:=extAcc);
-                        robt.extax.eax_b:=Round(robt.extax.eax_b\Dec:=extAcc);
-                        robt.extax.eax_c:=Round(robt.extax.eax_c\Dec:=extAcc);
-                        robt.extax.eax_d:=Round(robt.extax.eax_d\Dec:=extAcc);
-                        robt.extax.eax_e:=Round(robt.extax.eax_e\Dec:=extAcc);
-                        robt.extax.eax_f:=Round(robt.extax.eax_f\Dec:=extAcc);
-                        !got full robt - converting rounded robtarget to string...
-                        result:=ValToStr(robt);
-                    ELSE
-                        !wrong optional argument rotPrecision
-                        ErrWrite "ERROR::robtToString","Wrong argument value: extPrecision = "+NumToStr(extAcc,0),\RL2:="Correct value must be between [0 ; 6]";
-                        result:=ValToStr(zeroRobt);
-                    ENDIF
-                ENDIF
-            ELSE
-                !wrong optional argument rotPrecision
-                ErrWrite "ERROR::robtToString","Wrong argument value: rotPrecision = "+NumToStr(rotAcc,0),\RL2:="Correct value must be between [0 ; 6]";
-                result:=ValToStr(zeroRobt);
-            ENDIF
+        IF Present(extPrecision) extAcc:=extPrecision;
+        !rounding robtarget [trans (XYZ), rot (Q), robconf, extaxes (EAX)]
+        robt:=roundRobt(robt\posDec:=posAcc\oriDec:=rotAcc\extDec:=extAcc);
+        !rounding data
+        IF Present(onlyPose) THEN
+            !user wants only pose components - converting rounded pose
+            result:=ValToStr(robtToPose(robt));
         ELSE
-            !wrong optional argument posPrecision
-            ErrWrite "ERROR::robtToString","Wrong argument value: posPrecision = "+NumToStr(posAcc,0),\RL2:="Correct value must be between [0 ; 6]";
-            result:=ValToStr(zeroRobt);
+            !user want all data - converting rounded robt
+            result:=ValToStr(robt);
         ENDIF
 
         RETURN result;
@@ -284,50 +228,18 @@ MODULE libCasts
         !checking optional arguments (posPrecision & rotPrecision)
         IF Present(posPrecision) posAcc:=posPrecision;
         IF Present(rotPrecision) rotAcc:=rotPrecision;
-        !checking if inputs is ok
-        IF numInsideSet(posAcc,0,6) THEN
-            IF numInsideSet(rotAcc,0,6) THEN
-                !wobjdata robhold - NO CHANGE
-                wobj.robhold:=wobj.robhold;
-                !wobjdata ufprog - NO CHANGE
-                wobj.ufprog:=wobj.ufprog;
-                !wobjdata ufmec - NO CHANGE
-                wobj.ufmec:=wobj.ufmec;
-                !wobjdata user frame - position (XYZ)
-                wobj.uframe.trans.x:=Round(wobj.uframe.trans.x\Dec:=posAcc);
-                wobj.uframe.trans.y:=Round(wobj.uframe.trans.y\Dec:=posAcc);
-                wobj.uframe.trans.z:=Round(wobj.uframe.trans.z\Dec:=posAcc);
-                !wobjdata user frame - orientation (Q)
-                wobj.uframe.rot.q1:=Round(wobj.uframe.rot.q1\Dec:=rotAcc);
-                wobj.uframe.rot.q2:=Round(wobj.uframe.rot.q2\Dec:=rotAcc);
-                wobj.uframe.rot.q3:=Round(wobj.uframe.rot.q3\Dec:=rotAcc);
-                wobj.uframe.rot.q4:=Round(wobj.uframe.rot.q4\Dec:=rotAcc);
-                !wobjdata object frame - position (XYZ)
-                wobj.oframe.trans.x:=Round(wobj.oframe.trans.x\Dec:=posAcc);
-                wobj.oframe.trans.y:=Round(wobj.oframe.trans.y\Dec:=posAcc);
-                wobj.oframe.trans.z:=Round(wobj.oframe.trans.z\Dec:=posAcc);
-                !wobjdata object frame - orientation (Q)
-                wobj.oframe.rot.q1:=Round(wobj.oframe.rot.q1\Dec:=rotAcc);
-                wobj.oframe.rot.q2:=Round(wobj.oframe.rot.q2\Dec:=rotAcc);
-                wobj.oframe.rot.q3:=Round(wobj.oframe.rot.q3\Dec:=rotAcc);
-                wobj.oframe.rot.q4:=Round(wobj.oframe.rot.q4\Dec:=rotAcc);
-                !checking desired output
-                IF Present(onlyUFrame) THEN
-                    result:=ValToStr(wobj.uframe);
-                ELSEIF Present(onlyOFrame) THEN
-                    result:=ValToStr(wobj.oframe);
-                ELSE
-                    result:=ValToStr(wobj);
-                ENDIF
-            ELSE
-                !wrong optional argument rotPrecision
-                ErrWrite "ERROR::robtToString","Wrong argument value: rotPrecision = "+NumToStr(rotAcc,0),\RL2:="Correct value must be between [0 ; 6]";
-                result:=ValToStr(zeroRobt);
-            ENDIF
+        !rounding pose [trans (XYZ) and rot (Q)]
+        wobj:=roundWobj(wobj\posDec:=posAcc\oriDec:=rotAcc);
+        !rounding data
+        IF Present(onlyUFrame) THEN
+            !user wants only uframe components - converting pose
+            result:=ValToStr(wobj.uframe);
+        ELSEIF Present(onlyOFrame) THEN
+            !user wants only pframe components - converting pose
+            result:=ValToStr(wobj.oframe);
         ELSE
-            !wrong optional argument posPrecision
-            ErrWrite "ERROR::robtToString","Wrong argument value: posPrecision = "+NumToStr(posAcc,0),\RL2:="Correct value must be between [0 ; 6]";
-            result:=ValToStr(zeroRobt);
+            !user wants all components - converting wobj
+            result:=ValToStr(wobj);
         ENDIF
 
         RETURN result;
@@ -355,7 +267,7 @@ MODULE libCasts
 
         RETURN result;
     ENDFUNC
-    
+
     !function translating error number to string (may be needed in ERROR recovery)
     ! ret: string = error description
     ! arg: errorNo - error number
@@ -389,5 +301,5 @@ MODULE libCasts
         ENDIF
 
         RETURN result;
-    ENDFUNC    
+    ENDFUNC
 ENDMODULE
