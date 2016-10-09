@@ -109,6 +109,147 @@ MODULE libFiles
         IF Present(ext) ext:=output{3};
     ENDPROC
 
+    !function used to read single line from selected file
+    ! ret: string = readed line from file
+    ! arg: fullPath - location of file
+    ! arg: lineNo - which line number we want to read
+    FUNC string fileReadLine(string fullPath,num lineNo)
+        VAR string result;
+        VAR string currentLine;
+        VAR num currentLineNo:=0;
+        VAR iodev backupFile;
+
+        !open selected file in read mode 
+        Open fullPath,backupFile\Read;
+        !read file lines untill we got the selected one or end of file
+        WHILE currentLine<>EOF AND currentLineNo<lineNo DO
+            Incr currentLineNo;
+            currentLine:=ReadStr(backupFile);
+        ENDWHILE
+        !check if we got out from while loop because we got corr line
+        IF currentLineNo=lineNo result:=currentLine;
+        !close file at end
+        Close backupFile;
+
+        RETURN result;
+    ERROR
+        !error recovery
+        IF ERRNO=ERR_FILEACC OR ERRNO=ERR_FILEOPEN OR ERRNO=ERR_FILNOTFND THEN
+            ErrWrite "ERROR::fileReadLine","File path not existent!"\RL2:="Cant read line from file!";
+            RETURN result;
+        ENDIF
+    ENDFUNC
+
+    !function used to write single line in selected position
+    ! ret: bool = selected text was written to file (TRUE) or not (FALSE)
+    ! arg: filePath - location of file
+    ! arg: lineWrite - text to write in file
+    ! arg: linePos - number of line to write in selected text
+    FUNC bool fileWriteLine(string fullPath,string lineWrite,num linePos,\switch insert|switch overwrite)
+        VAR bool result:=FALSE;
+        VAR iodev backupFile;
+        VAR string currentLine;
+        VAR num totalLinesNo;
+        VAR string fileText{50};
+
+        IF linePos>0 AND linePos<Dim(fileText,1) THEN
+            !=====================================
+            !open selected file and read all lines and content from it
+            totalLinesNo:=fileLinesNo(fullPath\content:=fileText);
+            !check if new line is inside file contents 
+            IF totalLinesNo>=linePos THEN
+                !=====================================
+                !reorganize text as user specified
+                IF Present(insert) THEN
+                    !move text by one line from newLinePos to totalLinesNo
+                    FOR currLine FROM totalLinesNo TO linePos STEP -1 DO
+                        fileText{currLine+1}:=fileText{currLine};
+                    ENDFOR
+                    !new line is added so total lines in incremented
+                    Incr totalLinesNo;
+                ENDIF
+                !rewrite selected line (insert mode spreaded text \ overwrite rewrites)
+                fileText{linePos}:=lineWrite;
+                !=====================================
+                !write reorganized text to file
+                Open fullPath,backupFile\Write;
+                FOR i FROM 1 TO totalLinesNo DO
+                    Write backupFile,fileText{i};
+                ENDFOR
+                Close backupFile;
+                !file updated - all OK
+                result:=TRUE;
+            ELSE
+                !write current line to the end of file
+                Open fullPath,backupFile\Append;
+                Write backupFile,lineWrite;
+                Close backupFile;
+                !file updated - all OK
+                result:=TRUE;
+                !show warning that newLine is outside file content...
+                ErrWrite\W,"WARN::fileWriteLine","New line is outside file content..."
+                                           \RL2:="current file lines = "+NumToStr(totalLinesNo,0)+", new line no = "+NumToStr(linePos,0)+"."
+                                           \RL3:="Selected line was written to end of file!";
+            ENDIF
+        ELSE
+            ErrWrite "ERROR::fileWriteLine","New line position is illegal (out of range)!"
+                                      \RL2:="Inputted value = "+NumToStr(linePos,0)+", correct = [0-"+NumToStr(Dim(fileText,1),0)+"]!"
+                                      \RL3:="Write line cancelled!";
+        ENDIF
+
+        RETURN result;
+    ERROR
+        !error recovery
+        IF ERRNO=ERR_FILEACC OR ERRNO=ERR_FILEOPEN OR ERRNO=ERR_FILNOTFND THEN
+            ErrWrite "ERROR::fileWriteLine","File path not existent!"\RL2:="Cant write line to file!";
+            RETURN result;
+        ENDIF
+    ENDFUNC
+
+    !function used to count number of lines in file (and get its content if needed)
+    ! ret: num = number of lines in specified file
+    ! arg: fullPath - locaction of file
+    ! arg: content - file content
+    FUNC num fileLinesNo(string fullPath\INOUT string content{*})
+        VAR num result:=0;
+        VAR num contentMax;
+        VAR iodev currFile;
+        VAR string currentLine;
+        VAR bool contentFull:=FALSE;
+
+        !get max lines number that can fit in content table
+        IF Present(content) contentMax:=Dim(content,1);
+        !open selected file and read lines from it
+        Open fullPath,currFile\Read;
+        currentLine:=ReadStr(currFile);
+        WHILE currentLine<>EOF DO
+            Incr result;
+            !udpate content table if user wants it and its not full
+            IF Present(content) AND contentFull=FALSE THEN
+                IF result<=contentMax THEN
+                    content{result}:=currentLine;
+                ELSE
+                    contentFull:=TRUE;
+                ENDIF
+            ENDIF
+            currentLine:=ReadStr(currFile);
+        ENDWHILE
+        Close currFile;
+        !check if table content is full
+        IF Present(content) AND contentFull THEN
+            ErrWrite\W,"WARN::fileLinesNo","Not enough space in table content!"
+                                     \RL2:="Program resumes!";
+        ENDIF
+        !we are here so all is ok
+        RETURN result;
+    ERROR
+        !error recovery
+        IF ERRNO=ERR_FILEACC OR ERRNO=ERR_FILEOPEN OR ERRNO=ERR_FILNOTFND THEN
+            ErrWrite "ERROR::fileLinesNo","File path not existent!"\RL2:="Cant count file lines!";
+            RETURN -1;
+        ENDIF
+    ENDFUNC
+
     !procedure to save variable of any type
     ! arg: filePath - full file path to save selected variable
     ! arg: varID - variable ID to name saved value
