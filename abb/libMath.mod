@@ -178,6 +178,23 @@ MODULE libMath
 
         RETURN result;
     ENDFUNC
+    
+    !function used to count distance between vector and point
+    ! ret: num = distance point <-> vector
+    ! arg: vector - reference vector to count distance
+    ! arg: point - point to count distance
+    FUNC num vectorDistToPoint(pos vector, pos point)
+        VAR num result:=-1;
+        VAR pos tempVec{2};
+
+        !wyznaczamy wektor od poczatku prostej do punktu
+        tempVec{1}:=vectorCalc(point,vector);
+        tempVec{2}:=vectorCalc(point,shiftPosByVector(vector,vector,100));
+        !wyliczamy odleglosc
+        result:=VectMagn(crossProd(tempVec{1},tempVec{2}))/VectMagn(vector);
+
+        RETURN result;
+    ENDFUNC      
 
     !function used to inverse inputted vector
     ! ret: pos = vector inversed

@@ -152,6 +152,16 @@ MODULE libGeometry
 
         RETURN result;
     ENDFUNC
+    
+    !function used to count distance between line2D and point
+    ! ret: num = distance line2D <-> vector
+    ! arg: line - reference line2D to count distance
+    ! arg: point - point to count distance    
+    FUNC num lineDistToPoint(line2D line, pos point)
+        !line 2D include only X and Y (Z=0)
+        point.z:=0;
+        RETURN vectorDistToPoint(lineToVec(line),point);
+    ENDFUNC    
 
     !function calculating circle params (center and radius) from min 3 points
     ! ret: circle2D = calculated circle center and radius
