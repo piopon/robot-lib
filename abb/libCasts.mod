@@ -62,6 +62,59 @@ MODULE libCasts
 
         RETURN result;
     ENDFUNC
+    
+    !function converting external axes to string
+    ! ret: string = converted string
+    ! arg: extaxes - external axes to convert
+    ! arg: extPrec - decimal points in extjoint element 
+    FUNC string extaxToString(extjoint extaxes\num extPrec)
+        VAR string result:="";
+        VAR num extAcc:=2;
+
+        !checking optional arguments (extPrec)
+        IF Present(extPrec) extAcc:=extPrec;
+        !rounding pose [trans (XYZ) and rot (Q)]
+        extaxes:=roundExtax(extaxes\extDec:=extAcc);
+        !converting rounded pose to string
+        result:=ValToStr(extaxes);
+
+        RETURN result;
+    ENDFUNC 
+    
+    !function converting jointtarget to pos
+    ! ret: pos = converted pos
+    ! arg: jointtarget - jointtarget to convert
+    FUNC pos jointtToPos(jointtarget joints,PERS tooldata tool,PERS wobjdata wobj)
+        RETURN poseToPos(robtToPose(CalcRobT(joints,tool\WObj:=wobj)));
+    ENDFUNC    
+    
+    !function converting jointtarget to pose
+    ! ret: pose = converted pose
+    ! arg: jointtarget - jointtarget to convert
+    FUNC pose jointtToPose(jointtarget joints,PERS tooldata tool,PERS wobjdata wobj)
+        RETURN robtToPose(CalcRobT(joints,tool\WObj:=wobj));
+    ENDFUNC
+    
+    !function converting jointtarget to string
+    ! ret: string = converted string
+    ! arg: jointtarget - jointtarget to convert
+    ! arg: robPrec - decimal points in robjoint element 
+    ! arg: extPrec - decimal points in extjoint element 
+    FUNC string jointtToString(jointtarget joints\num robPrec\num extPrec)
+        VAR string result:="";
+        VAR num robAcc:=3;
+        VAR num extAcc:=4;
+
+        !checking optional arguments (robPrec & extPrec)
+        IF Present(robPrec) robAcc:=robPrec;
+        IF Present(extPrec) extAcc:=extPrec;
+        !rounding pose [trans (XYZ) and rot (Q)]
+        joints:=roundJointT(joints\robDec:=robAcc\extDec:=extAcc);
+        !converting rounded pose to string
+        result:=ValToStr(joints);
+
+        RETURN result;
+    ENDFUNC    
 
     !function converting num to bool
     ! ret: bool = converted bool
@@ -87,7 +140,53 @@ MODULE libCasts
 
         RETURN result;
     ENDFUNC
+    
+    !function converting pos to pose
+    ! ret: pose = converted pose
+    ! arg: position - pos to convert
+    ! arg: rot - orient to apply (if omitted: [1,0,0,0])
+    FUNC pose posToPose(pos position\orient rot)
+        VAR pose result;
+        VAR orient ori:=[1,0,0,0];
 
+        !check is user provided optional arguments
+        IF Present(rot) ori:=rot;
+        !update pose trans and rot 
+        result.trans:=position;
+        result.rot:=ori;
+
+        RETURN result;
+    ENDFUNC  
+    
+    !function converting pos to robtarget
+    ! ret: robtarget = converted robtarget
+    ! arg: position - pos to convert
+    ! arg: rot - orient to apply (if omitted: [1,0,0,0])
+    ! arg: ext - external axes to apply (if omitted: [9E9,9E9,9E9,9E9,9E9,9E9])
+    FUNC robtarget posToRobt(pos position\orient rot\extjoint ext)
+        VAR robtarget result;
+        VAR orient ori:=[1,0,0,0];
+        VAR extjoint eax:=[9E9,9E9,9E9,9E9,9E9,9E9];
+
+        !check is user provided optional arguments
+        IF Present(rot) ori:=rot;
+        IF Present(ext) eax:=ext;
+        !update pose trans, rot, extjoint and robconf
+        result.trans:=position;
+        result.rot:=ori;
+        result.robconf:=[0,0,0,0];
+        result.extax:=eax;
+
+        RETURN result;
+    ENDFUNC    
+
+    !function converting pose to pos
+    ! ret: pos = converted pos
+    ! arg: position - pose to convert
+    FUNC pos poseToPos(pose position)
+        RETURN position.trans;
+    ENDFUNC
+    
     !function converting pose to robtarget
     ! ret: robtarget = converted robtarget
     ! arg: position - pose to convert
@@ -107,16 +206,16 @@ MODULE libCasts
     !function converting pose to string
     ! ret: string = converted string
     ! arg: position - pose to convert
-    ! arg: posPrecision - decimal points in pos element (pose.trans)
-    ! arg: rotPrecision - decimal points in orient element (pose.rot)
-    FUNC string poseToString(pose position\num posPrecision\num rotPrecision)
+    ! arg: posPrec - decimal points in pos element (pose.trans)
+    ! arg: rotPrec - decimal points in orient element (pose.rot)
+    FUNC string poseToString(pose position\num posPrec\num rotPrec)
         VAR string result:="";
         VAR num posAcc:=3;
         VAR num rotAcc:=4;
 
-        !checking optional arguments (posPrecision & rotPrecision)
-        IF Present(posPrecision) posAcc:=posPrecision;
-        IF Present(rotPrecision) rotAcc:=rotPrecision;
+        !checking optional arguments (posPrec & rotPrec)
+        IF Present(posPrec) posAcc:=posPrec;
+        IF Present(rotPrec) rotAcc:=rotPrec;
         !rounding pose [trans (XYZ) and rot (Q)]
         position:=roundPose(position\posDec:=posAcc\oriDec:=rotAcc);
         !converting rounded pose to string
@@ -148,19 +247,19 @@ MODULE libCasts
     ! ret: string = converted string
     ! arg: robt - robtarget to convert
     ! arg: onlyPose - output only robtarget pose (no need to cast)
-    ! arg: posPrecision - decimal points in pos element (robt.trans)
-    ! arg: rotPrecision - decimal points in orient element (robt.rot)
-    ! arg: extPrecision - decimal points in external axis element (robt.extax)
-    FUNC string robtToString(robtarget robt\switch onlyPose,\num posPrecision\num rotPrecision\num extPrecision)
+    ! arg: posPrec - decimal points in pos element (robt.trans)
+    ! arg: rotPrec - decimal points in orient element (robt.rot)
+    ! arg: extPrec - decimal points in external axis element (robt.extax)
+    FUNC string robtToString(robtarget robt\switch onlyPose,\num posPrec\num rotPrec\num extPrec)
         VAR string result:="";
         VAR num posAcc:=1;
         VAR num rotAcc:=3;
         VAR num extAcc:=1;
 
-        !checking optional arguments (posPrecision, rotPrecision, extPrecision)
-        IF Present(posPrecision) posAcc:=posPrecision;
-        IF Present(rotPrecision) rotAcc:=rotPrecision;
-        IF Present(extPrecision) extAcc:=extPrecision;
+        !checking optional arguments (posPrec, rotPrec, extPrec)
+        IF Present(posPrec) posAcc:=posPrec;
+        IF Present(rotPrec) rotAcc:=rotPrec;
+        IF Present(extPrec) extAcc:=extPrec;
         !rounding robtarget [trans (XYZ), rot (Q), robconf, extaxes (EAX)]
         robt:=roundRobt(robt\posDec:=posAcc\oriDec:=rotAcc\extDec:=extAcc);
         !rounding data
@@ -218,16 +317,17 @@ MODULE libCasts
     !function converting wobjdata to string
     ! ret: string = converted string
     ! arg: wobj - workobject to convert
-    ! arg: precision - z jaka dokladnoscia wypisac wynik
-    FUNC string wobjToString(wobjdata wobj,\switch onlyUFrame|switch onlyOFrame,\num posPrecision\num rotPrecision)
+    ! arg: posPrec - decimal points in pos element 
+    ! arg: rotPrec - decimal points in pos element 
+    FUNC string wobjToString(wobjdata wobj,\switch onlyUFrame|switch onlyOFrame,\num posPrec\num rotPrec)
         VAR string result:="";
         VAR num posAcc:=1;
         VAR num rotAcc:=3;
         VAR num extAcc:=1;
 
-        !checking optional arguments (posPrecision & rotPrecision)
-        IF Present(posPrecision) posAcc:=posPrecision;
-        IF Present(rotPrecision) rotAcc:=rotPrecision;
+        !checking optional arguments (posPrec & rotPrec)
+        IF Present(posPrec) posAcc:=posPrec;
+        IF Present(rotPrec) rotAcc:=rotPrec;
         !rounding pose [trans (XYZ) and rot (Q)]
         wobj:=roundWobj(wobj\posDec:=posAcc\oriDec:=rotAcc);
         !rounding data
@@ -302,4 +402,45 @@ MODULE libCasts
 
         RETURN result;
     ENDFUNC
+    
+    !function converting vector to line
+    ! ret: line2D = line from vector
+    ! arg: vec - vector to convert
+    FUNC line2D vecToLine(pos vec)
+        RETURN lineGet(vec,shiftPosByVector(vec,vec,10));
+    ENDFUNC
+    
+    !function converting line to vector
+    ! ret: pos = vector (start point at X=0) from line
+    ! arg: line - line to convert
+    FUNC pos lineToVec(line2D line\num vecLen)
+        VAR num currLength:=1;
+        
+        !check if user wants different length than 1 (versor)
+        IF Present(vecLen) currLength:=vecLen;
+        RETURN vectorCalc([0,line.B,0],[Cos(line.A)*currLength,Sin(line.A)*currLength,0]);
+    ENDFUNC 
+    
+    !function used to calulate vector from pose 
+    ! ret: pos = vector from pose
+    ! arg: inPose - input pose to convert
+    FUNC pos poseToVec(pose inPose\switch X|switch Y|switch Z)
+        VAR pos result;
+        VAR robtarget tempRobt;
+
+        !check which axis to represent vector direction
+        IF Present(X) THEN
+            tempRobt:=RelTool(poseToRobt(inPose),100,0,0);
+        ELSEIF Present(Y) THEN
+            tempRobt:=RelTool(poseToRobt(inPose),0,100,0);
+        ELSEIF Present(Z) THEN
+            tempRobt:=RelTool(poseToRobt(inPose),0,0,100);
+        ELSE
+            tempRobt:=RelTool(poseToRobt(inPose),0,0,100);
+        ENDIF
+        !caluclate result;
+        result:=vectorCalc(inPose.trans,tempRobt.trans);
+
+        RETURN result;
+    ENDFUNC    
 ENDMODULE

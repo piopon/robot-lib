@@ -16,7 +16,7 @@ MODULE libRobot
     !function to read current external axes with selected precision (abb function wrapper) 
     ! ret: extjoint = current readed (& rounded) external axes
     ! arg: extPrec - external axes read precision
-    FUNC extjoint readExtAxes(num extPrec)
+    FUNC extjoint readExtax(num extPrec)
         VAR extjoint result;
         VAR jointtarget tempJointT;
 
@@ -24,7 +24,7 @@ MODULE libRobot
         WaitTime\InPos,0;
         tempJointT:=CJointT();
         !rounding current jointtarget
-        result:=roundExtAxes(tempJointT.extax\extDec:=extPrec);
+        result:=roundExtax(tempJointT.extax\extDec:=extPrec);
 
         RETURN result;
     ENDFUNC
@@ -136,8 +136,8 @@ MODULE libRobot
         IF Present(extDec) extDecimals:=extDec;
         IF numInsideSet(robDecimals,0,6) AND numInsideSet(extDecimals,0,6) THEN
             !round up trans and rot components
-            result.robax:=roundRobAxes(inJointT.robax\robDec:=robDecimals);
-            result.extax:=roundExtAxes(inJointT.extax\extDec:=extDecimals);
+            result.robax:=roundRobax(inJointT.robax\robDec:=robDecimals);
+            result.extax:=roundExtax(inJointT.extax\extDec:=extDecimals);
         ELSE
             !decimals NOK = no rounding applied + show error to user
             result:=inJointT;
@@ -153,7 +153,7 @@ MODULE libRobot
     ! ret: robjoint = robot axes with rounded components
     ! arg: inRob - robot axes to round up
     ! arg: robDec - decimal number
-    FUNC robjoint roundRobAxes(robjoint inRobAx\num robDec)
+    FUNC robjoint roundRobax(robjoint inRobAx\num robDec)
         VAR robjoint result;
         VAR num decimals:=3;
 
@@ -182,7 +182,7 @@ MODULE libRobot
     ! ret: extax = external axes with rounded components
     ! arg: inExt - external axes  to round up
     ! arg: extDec - decimal number (correct range 0 - 6)
-    FUNC extjoint roundExtAxes(extjoint inExtAx\num extDec)
+    FUNC extjoint roundExtax(extjoint inExtAx\num extDec)
         VAR extjoint result;
         VAR num decimals:=3;
 
@@ -310,7 +310,7 @@ MODULE libRobot
             result.trans:=roundPos(inRobt.trans\posDec:=posAcc);
             result.rot:=roundOri(inRobt.rot\oriDec:=oriAcc);
             result.robconf:=inRobt.robconf;
-            result.extax:=roundExtAxes(inRobt.extax\extDec:=extAcc);
+            result.extax:=roundExtax(inRobt.extax\extDec:=extAcc);
         ELSE
             !decimals NOK = no rounding applied + show error to user
             result:=inRobt;
