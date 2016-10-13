@@ -82,6 +82,30 @@ MODULE libGeometry
 
         RETURN result;
     ENDFUNC
+    
+    !function used to local correction of pose variable (analogy to RelTool) 
+    ! ret: pose = locally corrected pose
+    ! arg: input - input pose
+    ! arg: x,y,z - trans correction (displacement in mm in X, Y and Z direction)
+    ! arg: Rx,Ry,Rz - orient correction (rotation in deg around X, Y and Z axis)
+    FUNC pose relPose(VAR pose input,num x,num y,num z,\num Rx,\num Ry,\num Rz)
+        VAR pose result;
+        VAR pose correction;
+        VAR num finalRx:=0;
+        VAR num finalRy:=0;
+        VAR num finalRz:=0;
+
+        !check optional data provided by user
+        IF Present(Rx) finalRx:=Rx;
+        IF Present(Ry) finalRy:=Ry;
+        IF Present(Rz) finalRz:=Rz;
+        !compose correction
+        correction:=[[x,y,z],OrientZYX(finalRz,finalRy,finalRx)];
+        !locally modify input pose
+        result:=PoseMult(input,correction);
+
+        RETURN result;
+    ENDFUNC    
 
     !function used to calc local reorientation of pose (in tool coordinate system) [order: Z->Y->X]
     ! ret: pose = locally rotated pose
@@ -89,7 +113,7 @@ MODULE libGeometry
     ! arg: xRotDeg - rotation angle (in deg) around axis X
     ! arg: yRotDeg - rotation angle (in deg) around axis Y
     ! arg: zRotDeg - rotation angle (in deg) around axis Z
-    FUNC pose localRotPoseZYX(pose originalPose,\num xRotDeg\num yRotDeg\num zRotDeg)
+    FUNC pose rotLocalPoseZYX(pose originalPose,\num xRotDeg\num yRotDeg\num zRotDeg)
         VAR pose result;
         VAR pose tempPose:=[[0,0,0],[1,0,0,0]];
         VAR num xRot:=0;
@@ -107,6 +131,58 @@ MODULE libGeometry
 
         RETURN result;
     ENDFUNC
+    
+    !function used to calc global reorientation of pose (in wobj coordinate system) [order: Z->Y->X]
+    ! ret: pose = globally rotated pose
+    ! arg: originalPose - input pose to rotate
+    ! arg: xRotDeg - rotation angle (in deg) around axis X
+    ! arg: yRotDeg - rotation angle (in deg) around axis Y
+    ! arg: zRotDeg - rotation angle (in deg) around axis Z
+    FUNC pose rotGlobalPoseZYX(pose originalPose,\num xRotDeg\num yRotDeg\num zRotDeg)
+        VAR pose result;
+        VAR pose tempPose:=[[0,0,0],[1,0,0,0]];
+        VAR num xRot:=0;
+        VAR num yRot:=0;
+        VAR num zRot:=0;
+
+        !update rotations angles (user selection)
+        IF Present(xRotDeg) xRot:=xRotDeg;
+        IF Present(yRotDeg) yRot:=yRotDeg;
+        IF Present(zRotDeg) zRot:=zRotDeg;
+        !rotate position (multiply)
+        tempPose.rot:=OrientZYX(zRot,yRot,xRot);
+        tempPose.rot:=Norient(tempPose.rot);
+        result:=PoseMult(tempPose,originalPose);
+
+        RETURN result;
+    ENDFUNC 
+    
+    !function used to calc global reorientation of robtarget (in wobj coordinate system) [order: Z->Y->X]
+    ! ret: robtarget = globally rotated robtarget
+    ! arg: originalRobt - input robtarget to rotate
+    ! arg: xRotDeg - rotation angle (in deg) around axis X
+    ! arg: yRotDeg - rotation angle (in deg) around axis Y
+    ! arg: zRotDeg - rotation angle (in deg) around axis Z
+    FUNC robtarget rotGlobalRobtZYX(robtarget originalRobt,\num xRotDeg\num yRotDeg\num zRotDeg)
+        VAR robtarget result;
+        VAR pose tempPose;
+        VAR num xRot:=0;
+        VAR num yRot:=0;
+        VAR num zRot:=0;
+
+        !update rotations angles (user selection)
+        IF Present(xRotDeg) xRot:=xRotDeg;
+        IF Present(yRotDeg) yRot:=yRotDeg;
+        IF Present(zRotDeg) zRot:=zRotDeg;
+        !rotate position (multiply)
+        tempPose:=rotGlobalPoseZYX(robtToPose(originalRobt)\xRotDeg:=xRot\yRotDeg:=yRot\zRotDeg:=zRot);
+        !convert back to robtarget and recover external axes and configuration
+        result:=poseToRobt(tempPose);
+        result.robconf:=originalRobt.robconf;
+        result.extax:=originalRobt.extax;
+
+        RETURN result;
+    ENDFUNC    
 
     !function to find line crossing two points (described by linear equation) 
     ! ret: line2D = calculated line (described by params A and B of linear equation [y=Ax+B])
@@ -195,6 +271,31 @@ MODULE libGeometry
 
         RETURN result;
     ENDFUNC
+    
+    !function used to calc robtarget lying at the same circle as inputted position
+    ! ret: robtarget = position at the same circle (at radius and degree) as startPoint
+    ! arg: startPoint - start position from which we want to calculate output
+    ! arg: startPointAngle - at what angle of circle start point is lying (default 0)
+    ! arg: radius - radius of circe
+    ! arg: diffAngle - angle output from startPoint (can be positive and negative)
+    FUNC robtarget calcPosOnCircle(robtarget startPoint\num atAngle,num radius,num diffAngle)
+        VAR robtarget result;
+        VAR num startPointAngle:=0;
+        VAR robtarget center;
+
+        !check data provided by user
+        IF Present(atAngle) startPointAngle:=atAngle;
+        !calc center of circle
+        center:=startPoint;
+        center.trans.x:=startPoint.trans.x-radius*Cos(startPointAngle);
+        center.trans.y:=startPoint.trans.y-radius*Sin(startPointAngle);
+        !calc output pose
+        result:=center;
+        result.trans.x:=center.trans.x+radius*Cos(startPointAngle+diffAngle);
+        result.trans.y:=center.trans.y+radius*Sin(startPointAngle+diffAngle);
+
+        RETURN result;
+    ENDFUNC    
 
     !procedure to reorient selected axis of TCP so it will point to zero of wobj0 (robot base)
     ! arg: axis - which axis has to point to wobj0 (no argument = closest axis)

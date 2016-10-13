@@ -34,6 +34,17 @@ MODULE libMath
     FUNC bool numOutsideSet(num val,num setStart,num setStop)
         RETURN val<setStart OR val>setStop;
     ENDFUNC
+    
+    !procedure used to swap two numbers
+    ! arg: num1 - first number
+    ! arg: num2 - second number
+    PROC numSwap(INOUT num num1,INOUT num num2)
+        VAR num temp;
+
+        temp:=num1;
+        num1:=num2;
+        num2:=temp;
+    ENDPROC    
 
     !function used to calculate division of two orients
     ! ret: orient = division result 
@@ -73,6 +84,22 @@ MODULE libMath
         RETURN result;
     ENDFUNC
 
+    !function used to calulate distance from two positions
+    ! ret: num = distance between poses
+    ! arg: pose1 - first pose
+    ! arg: pose2 - second pose
+    FUNC num poseDistance(pose pose1,pose pose2)
+        RETURN Distance(pose1.trans,pose2.trans);
+    ENDFUNC     
+    
+    !function used to calulate distance from two robtargets
+    ! ret: num = distance between robtargets
+    ! arg: robt1 - first robtarget
+    ! arg: robt2 - second robtarget
+    FUNC num robtDistance(robtarget robt1,robtarget robt2)
+        RETURN Distance(robt1.trans,robt2.trans);
+    ENDFUNC    
+    
     !function used to calculate the product of two robtargets
     ! ret: robtarget = product of two robtargets
     ! arg: robt1 - first robtarget to multiply (ORDER IMPORTANT!)
