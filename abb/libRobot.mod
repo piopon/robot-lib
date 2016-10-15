@@ -10,6 +10,170 @@ MODULE libRobot
     !*******************************************************************!
 
     !===================================================
+    !==============  COMPARE POSITIONS  ================
+    !=================================================== 
+
+    !function used to compare two external axes with specified decimal precision
+    ! ret: bool = external axes are equal (TRUE) or not (FALSE)
+    ! arg: eax1 - first external joint to compare
+    ! arg: eax2 - second external joint to compare
+    ! arg: prec - number of decimal points used in comparison (default: 3)
+    FUNC bool compareExtax(extjoint eax1,extjoint eax2\num prec)
+        VAR bool result;
+        VAR num dec:=3;
+         
+        !check user optional argument
+        IF Present(prec) dec:=prec;
+        !rounding external axes
+        eax1:=roundExtax(eax1\extDec:=dec);
+        eax2:=roundExtax(eax2\extDec:=dec);
+        !comparing two rounded external axes
+        result:=eax1=eax2;
+
+        RETURN result;
+    ENDFUNC    
+    
+    !function used to compare two robot axes with specified decimal precision
+    ! ret: bool = robot axes are equal (TRUE) or not (FALSE)
+    ! arg: robax1 - first robot joint to compare
+    ! arg: robax2 - second robot joint to compare
+    ! arg: prec - number of decimal points used in comparison (default: 3)
+    FUNC bool compareRobax(robjoint robax1,robjoint robax2\num prec)
+        VAR bool result;
+        VAR num dec:=3;
+         
+        !check user optional argument
+        IF Present(prec) dec:=prec;
+        !rounding robot axes
+        robax1:=roundRobax(robax1\robDec:=dec);
+        robax2:=roundRobax(robax2\robDec:=dec);
+        !comparing two rounded robot axes
+        result:=robax1=robax2;
+
+        RETURN result;
+    ENDFUNC      
+    
+    !function used to compare two jointtargets with specified decimal precision
+    ! ret: bool = jointtargets are equal (TRUE) or not (FALSE)
+    ! arg: joint1 - first jointtarget to compare
+    ! arg: joint2 - second jointtarget to compare
+    ! arg: prec - number of decimal points used in comparison (default: 3)
+    FUNC bool compareJointT(jointtarget joint1,jointtarget joint2\num prec)
+        VAR bool result;
+        VAR num dec:=3;
+         
+        !check user optional argument
+        IF Present(prec) dec:=prec;
+        !rounding jointtargets
+        joint1:=roundJointT(joint1\robDec:=dec\extDec:=dec);
+        joint2:=roundJointT(joint2\robDec:=dec\extDec:=dec);
+        !comparing two rounded jointtargets
+        result:=joint1=joint2;
+
+        RETURN result;
+    ENDFUNC
+    
+    !function used to compare two orients with specified decimal precision
+    ! ret: bool = orients are equal (TRUE) or not (FALSE)
+    ! arg: ori1 - first orient to compare
+    ! arg: ori2 - second orient to compare
+    ! arg: prec - number of decimal points used in comparison (default: 3)
+    FUNC bool compareOri(orient ori1,orient ori2\num prec)
+        VAR bool result;
+        VAR num dec:=3;
+         
+        !check user optional argument
+        IF Present(prec) dec:=prec;
+        !rounding orients
+        ori1:=roundOri(ori1\oriDec:=dec);
+        ori2:=roundOri(ori2\oriDec:=dec);
+        !comparing two rounded orients
+        result:=ori1=ori2;
+
+        RETURN result;
+    ENDFUNC    
+    
+    !function used to compare two poses with specified decimal precision
+    ! ret: bool = poses are equal (TRUE) or not (FALSE)
+    ! arg: pos1 - first pos to compare
+    ! arg: pos2 - second pos to compare
+    ! arg: prec - number of decimal points used in comparison (default: 3)
+    FUNC bool comparePos(pos pos1,pos pos2\num prec)
+        VAR bool result;
+        VAR num dec:=3;
+         
+        !check user optional argument
+        IF Present(prec) dec:=prec;
+        !rounding poses
+        pos1:=roundPos(pos1\posDec:=dec);
+        pos2:=roundPos(pos2\posDec:=dec);
+        !comparing two rounded poses
+        result:=pos1=pos2;
+
+        RETURN result;
+    ENDFUNC  
+    
+    !function used to compare two positions with specified decimal precision
+    ! ret: bool = positions are equal (TRUE) or not (FALSE)
+    ! arg: pose1 - first position to compare
+    ! arg: pose2 - second position to compare
+    ! arg: prec - number of decimal points used in comparison (default: 3)
+    FUNC bool comparePose(pose pose1,pose pose2\num prec)
+        VAR bool result;
+        VAR num dec:=3;
+         
+        !check user optional argument
+        IF Present(prec) dec:=prec;
+        !rounding positions
+        pose1:=roundPose(pose1\posDec:=dec\oriDec:=dec);
+        pose2:=roundPose(pose2\posDec:=dec\oriDec:=dec);
+        !comparing two rounded positions
+        result:=pose1=pose2;
+
+        RETURN result;
+    ENDFUNC       
+
+    !function used to compare two robtargets with specified decimal precision
+    ! ret: bool = robtargets are equal (TRUE) or not (FALSE)
+    ! arg: robt1 - first robtarget to compare
+    ! arg: robt2 - second robtarget to compare
+    ! arg: prec - number of decimal points used in comparison (default: 3)
+    FUNC bool compareRobT(robtarget robt1,robtarget robt2\num prec)
+        VAR bool result;
+        VAR num dec:=3;
+         
+        !check user optional argument
+        IF Present(prec) dec:=prec;
+        !rounding robtargets
+        robt1:=roundRobT(robt1\posDec:=dec\oriDec:=dec\extDec:=dec);
+        robt2:=roundRobT(robt2\posDec:=dec\oriDec:=dec\extDec:=dec);
+        !comparing two rounded robtargets
+        result:=robt1=robt2;
+
+        RETURN result;
+    ENDFUNC  
+    
+    !function used to compare two workobjects with specified decimal precision
+    ! ret: bool = workobjects are equal (TRUE) or not (FALSE)
+    ! arg: wobj1 - first workobject to compare
+    ! arg: wobj2 - second workobject to compare
+    ! arg: prec - number of decimal points used in comparison (default: 3)
+    FUNC bool compareWobj(wobjdata wobj1,wobjdata wobj2\num prec)
+        VAR bool result;
+        VAR num dec:=3;
+         
+        !check user optional argument
+        IF Present(prec) dec:=prec;
+        !rounding workobjects
+        wobj1:=roundWobj(wobj1\posDec:=dec\oriDec:=dec);
+        wobj2:=roundWobj(wobj2\posDec:=dec\oriDec:=dec);
+        !comparing two rounded workobjects
+        result:=wobj1=wobj2;
+
+        RETURN result;
+    ENDFUNC     
+    
+    !===================================================
     !=================  READ VALUES  ===================
     !===================================================     
 
@@ -28,6 +192,22 @@ MODULE libRobot
 
         RETURN result;
     ENDFUNC
+    
+    !function to read current robot axes with selected precision (abb function wrapper) 
+    ! ret: robjoint = current readed (& rounded) robot axes
+    ! arg: robPrec - robot axes read precision
+    FUNC robjoint readRobax(num robPrec)
+        VAR robjoint result;
+        VAR jointtarget tempJointT;
+
+        !waiting untill robot is standstill and read current position
+        WaitTime\InPos,0;
+        tempJointT:=CJointT();
+        !rounding current jointtarget
+        result:=roundRobax(tempJointT.robax\robDec:=robPrec);
+
+        RETURN result;
+    ENDFUNC    
 
     !function to read current jointtarget with selected precision (abb function wrapper) 
     ! ret: jointtarget = current readed (& rounded) jointtarget 
@@ -48,6 +228,25 @@ MODULE libRobot
 
         RETURN result;
     ENDFUNC
+    
+    !function to read current orient with selected precision (abb function wrapper) 
+    ! ret: orient = current readed (& rounded) orient
+    ! arg: tool - tooldata used to define current orient
+    ! arg: wobj - wobjdata used to define current orient
+    ! arg: oriPrec - robot orient read precision (decimal numbers)
+    FUNC orient readOri(PERS tooldata tool,PERS wobjdata wobj,num oriPrec)
+        VAR orient result;
+        VAR robtarget tempRobt;
+
+        !waiting untill robot is standstill (to read good position)
+        WaitTime\InPos,0;
+        !reading current pose (selected tool in selected wobj)
+        tempRobt:=CRobT(\Tool:=tool\WObj:=wobj);
+        !rounding readed pose
+        result:=roundOri(tempRobt.rot\oriDec:=oriPrec);
+
+        RETURN result;
+    ENDFUNC    
 
     !function to read current pos with selected precision (abb function wrapper) 
     ! ret: pos = current readed (& rounded) pos
@@ -97,7 +296,7 @@ MODULE libRobot
     ! arg: robPrec - robot axes read precision
     ! arg: oriPrec - robot orient read precision
     ! arg: extPrec - external axes read precision
-    FUNC robtarget readRobt(PERS tooldata tool,PERS wobjdata wobj,num robPrec\num oriPrec\num extPrec)
+    FUNC robtarget readRobT(PERS tooldata tool,PERS wobjdata wobj,num robPrec\num oriPrec\num extPrec)
         VAR robtarget result;
         VAR num orientPrec;
         VAR num extaxPrec;
@@ -112,10 +311,32 @@ MODULE libRobot
         !reading current robtarget (selected tool in selected wobj)
         result:=CRobT(\Tool:=tool\WObj:=wobj);
         !rounding readed robtarget
-        result:=roundRobt(result\posDec:=robPrec\oriDec:=orientPrec\extDec:=extaxPrec);
+        result:=roundRobT(result\posDec:=robPrec\oriDec:=orientPrec\extDec:=extaxPrec);
 
         RETURN result;
     ENDFUNC
+    
+    !function to read current workobject with selected precision (abb function wrapper) 
+    ! ret: wobjdata = current readed (& rounded) workobject
+    ! arg: tool - tooldata used to define current position
+    ! arg: wobj - wobjdata used to define current position
+    ! arg: robPrec - robot axes read precision
+    ! arg: oriPrec - robot orient read precision
+    ! arg: extPrec - external axes read precision
+    FUNC wobjdata readWobj(num posPrec\num oriPrec)
+        VAR wobjdata result;
+        VAR num orientPrec;
+
+        !checking if user wants to have different precisions
+        orientPrec:=posPrec;
+        IF Present(oriPrec) orientPrec:=oriPrec;
+        !reading current workobject 
+        result:=CWobj();
+        !rounding readed workobject
+        result:=roundWobj(result\posDec:=posPrec\oriDec:=orientPrec);
+
+        RETURN result;
+    ENDFUNC    
 
     !===================================================
     !===============  ROUND VALUES  ====================
@@ -295,7 +516,7 @@ MODULE libRobot
     ! arg: posDec - decimal number of pos component
     ! arg: oriDec - decimal number of orient component
     ! arg: extDec - decimal number of external axes component
-    FUNC robtarget roundRobt(robtarget inRobt\num posDec\num oriDec\num extDec)
+    FUNC robtarget roundRobT(robtarget inRobt\num posDec\num oriDec\num extDec)
         VAR robtarget result;
         VAR num posAcc:=3;
         VAR num oriAcc:=5;
