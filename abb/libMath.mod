@@ -17,6 +17,86 @@ MODULE libMath
         RETURN [vec1.y*vec2.z-vec1.z*vec2.y,vec1.z*vec2.x-vec1.x*vec2.z,vec1.x*vec2.y-vec1.y*vec2.x];
     ENDFUNC
 
+    !function used to calc determinant of inputted matrix
+    ! ret: num = calculated matrix determinant
+    ! arg: m - inputted matrix to calc determinant
+    ! arg: considerSize - size of matrix to calc determinant
+    FUNC num matrixDeterminant(num m{*,*},num considerSize)
+        VAR num result:=0;
+        VAR num minor{5,5};
+        VAR num methodJ:=1;
+
+        !check if matrix is rectangular
+        IF Dim(m,1)=Dim(m,2) THEN
+            !check if matrix size is big enough for inputted considerSize
+            IF Dim(m,1)>=considerSize THEN
+                !check what size user wants to consider for calculating determinant
+                IF considerSize=1 THEN
+                    !one dimension matrix has only one element
+                    result:=m{1,1};
+                ELSEIF considerSize=2 THEN
+                    !calc two dimension matrix determinant (to speed up calculations - less recursive calls)
+                    result:=m{1,1}*m{2,2}-m{1,2}*m{2,1};
+                ELSEIF considerSize=3 THEN
+                    !calc three dimension matrix determinant (to speed up calculations - less recursive calls)
+                    result:=m{1,1}*m{2,2}*m{3,3}+m{1,2}*m{2,3}*m{3,1}+m{2,1}*m{3,2}*m{1,3}-
+                            m{1,3}*m{2,2}*m{3,1}-m{1,2}*m{2,1}*m{3,3}-m{1,1}*m{2,3}*m{3,2};
+                ELSE
+                    !find determinant using recursive method (with minors)
+                    FOR rowNo FROM 1 TO considerSize DO
+                        !get minor from inputted matrix
+                        matrixGetMinor m,rowNo,1,minor;
+                        !calculate determinant from minor
+                        result:=result+Pow(-1,rowNo+methodJ)*m{rowNo,methodJ}*matrixDeterminant(minor,considerSize-1);
+                    ENDFOR
+                ENDIF
+            ELSE
+                ErrWrite "ERROR::matrixDeterminant","Matrix size must be at least equal to considerSize!";
+                result:=-9E9;
+            ENDIF
+        ELSE
+            ErrWrite "ERROR::matrixDeterminant","Matrix must be rectangular (rows = cols)!";
+            result:=-9E9;
+        ENDIF
+
+        RETURN result;
+    ENDFUNC
+
+    !procedure used to get minor from inputted matrix
+    ! arg: matrix - inputted matrix to get minor from
+    ! arg: delRow - which row we want to exclude from matrix
+    ! arg: delCol - which column we want to exclude from matrix
+    ! arg: minor - result minor 
+    PROC matrixGetMinor(num matrix{*,*},num delRow,num delCol,INOUT num minor{*,*})
+        VAR num minorRow:=1;
+        VAR num minorCol:=1;
+
+        !check inputted data
+        IF delRow<=Dim(matrix,1) AND delCol<=Dim(matrix,2) THEN
+            !scan all matrix row
+            FOR cRow FROM 1 TO Dim(matrix,1) DO
+                !if current row isnt excluded scan all elements from it
+                IF cRow<>delRow THEN
+                    !scan all matrix columns
+                    FOR cCol FROM 1 TO Dim(matrix,2) DO
+                        !if current column isnt excluded get it element
+                        IF cCol<>delCol THEN
+                            minor{minorRow,minorCol}:=matrix{cRow,cCol};
+                            !next minor column
+                            Incr minorCol;
+                        ENDIF
+                    ENDFOR
+                    !next minor row
+                    Incr minorRow;
+                    !reset minor column
+                    minorCol:=1;
+                ENDIF
+            ENDFOR
+        ELSE
+            ErrWrite "ERROR::matrixGetMinor","extrudeRow AND/OR extrudeCol is outside matrix dimension.";
+        ENDIF
+    ENDPROC
+
     !function used to check if selected value is inside set defined by upper and lower limit
     ! ret: bool = checked value is inside (TRUE) or outside (FALSE) of selected set
     ! arg: val - value to check
