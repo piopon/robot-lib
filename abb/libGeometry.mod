@@ -56,32 +56,6 @@ MODULE libGeometry
 
         RETURN result;
     ENDFUNC
-
-    !function used to calculate mid robt (and ortho shift it)
-    ! ret: robtarget = middle robt (with ortho shift if needed)
-    ! arg: robt1 - first robtarget 
-    ! arg: robt2 - second robtarget 
-    ! arg: orthoShift - otrhogonal shift length (if specified)
-    FUNC robtarget calcMiddleRobT(robtarget robt1,robtarget robt2\num orthoShift)
-        VAR robtarget result;
-        VAR pos vector;
-        VAR pos orthoVector;
-        VAR num dist:=0;
-
-        !remeber orient,extax and config (pos will be changed below)
-        result:=robt2;
-        !calculate vector between robt1 and robt2
-        vector:=vectorCalc(robt1.trans,robt2.trans);
-        dist:=Distance(robt1.trans,robt2.trans);
-        result:=shiftRobtByVector(result,vector,dist/2);
-        !check if user want to otho sift this middle point
-        IF Present(orthoShift) THEN
-            orthoVector:=[-vector.y,vector.x,0];
-            result:=shiftRobtByVector(result,orthoVector,orthoShift);
-        ENDIF
-
-        RETURN result;
-    ENDFUNC
     
     !function used to local correction of pose variable (analogy to RelTool) 
     ! ret: pose = locally corrected pose
@@ -278,7 +252,7 @@ MODULE libGeometry
     ! arg: startPointAngle - at what angle of circle start point is lying (default 0)
     ! arg: radius - radius of circe
     ! arg: diffAngle - angle output from startPoint (can be positive and negative)
-    FUNC robtarget calcPosOnCircle(robtarget startPoint\num atAngle,num radius,num diffAngle)
+    FUNC robtarget circlePerimPos(robtarget startPoint\num atAngle,num radius,num diffAngle)
         VAR robtarget result;
         VAR num startPointAngle:=0;
         VAR robtarget center;
@@ -300,16 +274,16 @@ MODULE libGeometry
     !procedure to reorient selected axis of TCP so it will point to zero of wobj0 (robot base)
     ! arg: axis - which axis has to point to wobj0 (no argument = closest axis)
     ! arg: tool - which tool to reorient
-    PROC toolAxisToRobot(\num axis,PERS tooldata tool)
+    PROC axisToRobot(\num axis,PERS tooldata tool)
         !first we have to do align (Z tool = Z wobj0)
-        alignPos axisZ,tool,wobj0;
+        axisPosAlign axisZ,tool,wobj0;
         !next rotate axis to wobj0 
         IF Present(axis) THEN
             !user inputted which axis of TCP has to point to wobj0
-            rotateAxisToWobjZ\whichAxis:=axis,tool,wobj0;
+            axisToWobjZ\whichAxis:=axis,tool,wobj0;
         ELSE
             !the closest axis of TCP has to point to wobj0
-            rotateAxisToWobjZ tool,wobj0;
+            axisToWobjZ tool,wobj0;
         ENDIF
     ENDPROC
 
@@ -317,7 +291,7 @@ MODULE libGeometry
     ! arg: whichAxis - which axis has to point to wobj0 (no argument = closest axis)
     ! arg: tool - which tool to reorient
     ! arg: wobj - which wobj to point to
-    PROC rotateAxisToWobjZ(\num whichAxis,PERS tooldata tool,PERS wobjdata wobj)
+    PROC axisToWobjZ(\num whichAxis,PERS tooldata tool,PERS wobjdata wobj)
         VAR robtarget currentPos;
         VAR num whichAxisToBase;
         VAR num backupZ;
@@ -336,10 +310,10 @@ MODULE libGeometry
             whichAxisToBase:=whichAxis;
         ELSE
             !find closest axis
-            whichAxisToBase:=closestAxisToVec(currentPos,vecReference);
+            whichAxisToBase:=axisClosestToVec(currentPos,vecReference);
         ENDIF
         !screw selected axis to vector (calculate only)
-        currentPos:=screwAxis(currentPos,whichAxisToBase,vecReference);
+        currentPos:=axisScrew(currentPos,whichAxisToBase,vecReference);
         !update robot position
         MoveL currentPos,v100,fine,tool\WObj:=wobj;
     ENDPROC
@@ -348,7 +322,7 @@ MODULE libGeometry
     ! arg: toWhichAxis - to which wobj axis we want to align (1 = X, 2 = Y, 3 = Z)
     ! arg: tool - which TCP we want to align
     ! arg: wobj - which WOBJ we want to align to
-    PROC alignPos(num toWhichAxis,PERS tooldata tool,PERS wobjdata wobj)
+    PROC axisPosAlign(num toWhichAxis,PERS tooldata tool,PERS wobjdata wobj)
         VAR num closeAxisNo;
         VAR robtarget currentPos;
 
@@ -357,9 +331,9 @@ MODULE libGeometry
             !get current pose (TCP in WOBJ)
             currentPos:=CRobT(\Tool:=tool\WObj:=wobj);
             !finding closes axis to vector
-            closeAxisNo:=closestAxisToWobj(currentPos,toWhichAxis);
+            closeAxisNo:=axisClosestToWobj(currentPos,toWhichAxis);
             !calc align pose and move to it
-            currentPos:=screwAxis(currentPos,closeAxisNo,axisToVec(toWhichAxis)\checkVec);
+            currentPos:=axisScrew(currentPos,closeAxisNo,axisToVec(toWhichAxis)\checkVec);
             MoveL currentPos,v100,fine,tool\WObj:=wobj;
         ELSE
             ErrWrite "ERROR::alignPos","Cant align pos - wrong axis inputted ["+NumToStr(toWhichAxis,0);
@@ -370,7 +344,7 @@ MODULE libGeometry
     ! ret: num = number of axis closest to selected wobj axis
     ! arg: inspectedPose - TCP position which closest axis we want to find
     ! arg: whichWobjAxis - reference wobj axis
-    FUNC num closestAxisToWobj(robtarget inspectedPose,num whichWobjAxis)
+    FUNC num axisClosestToWobj(robtarget inspectedPose,num whichWobjAxis)
         VAR num result;
         VAR num vecDist{3};
         VAR pos vecAxis{3};
@@ -407,7 +381,7 @@ MODULE libGeometry
     ! ret: num = number of axis closest to selected vector
     ! arg: inspectedPose - TCP position which closest axis we want to find
     ! arg: vecRef - reference vector to which we want to find closest axis
-    FUNC num closestAxisToVec(robtarget inspectedPose,pos vecRef)
+    FUNC num axisClosestToVec(robtarget inspectedPose,pos vecRef)
         VAR num result;
         VAR pos vector{3};
         VAR num angles{3};
@@ -435,7 +409,7 @@ MODULE libGeometry
     ! arg: whichAxis - which position axis we want to align to vector
     ! arg: refVec - align vector
     ! arg: checkVec - option to check if vector is lying on axis (is parallel to selected axis)
-    FUNC robtarget screwAxis(robtarget inRobt,num whichAxis,pos refVec\switch checkVec)
+    FUNC robtarget axisScrew(robtarget inRobt,num whichAxis,pos refVec\switch checkVec)
         VAR robtarget result;
         VAR bool continueProcess:=TRUE;
         VAR num angle;

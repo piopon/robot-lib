@@ -34,7 +34,42 @@ MODULE libMath
     FUNC bool numOutsideSet(num val,num setStart,num setStop)
         RETURN val<setStart OR val>setStop;
     ENDFUNC
-    
+
+    !function used to check selected parity type of inputted number 
+    ! ret: bool = inputted number is correct for user defined parity type
+    ! arg: inputNum - number we want to check for parity
+    ! arg: even - we want to check if number is even 
+    ! arg: odd - we want to check if number is odd
+    FUNC bool numParity(num inputNum\switch even|switch odd)
+        VAR bool result:=FALSE;
+
+        !check what parity type we want to check
+        IF Present(even) THEN
+            !check if number is even
+            result:=inputNum MOD 2=0;
+        ELSEIF Present(odd) THEN
+            !check if number is odd
+            result:=inputNum MOD 2=1;
+        ELSE
+            !dont know what parity type to check
+            result:=FALSE;
+        ENDIF
+
+        RETURN result;
+    ENDFUNC
+
+    !function used to get sign from inputted value
+    ! ret: num = sign of value
+    ! arg: val - value to check
+    FUNC num numSign(num val)
+        VAR num result:=0;
+
+        IF val>0 result:=1;
+        IF val<0 result:=-1;
+
+        RETURN result;
+    ENDFUNC
+
     !procedure used to swap two numbers
     ! arg: num1 - first number
     ! arg: num2 - second number
@@ -44,7 +79,7 @@ MODULE libMath
         temp:=num1;
         num1:=num2;
         num2:=temp;
-    ENDPROC    
+    ENDPROC
 
     !function used to calculate division of two orients
     ! ret: orient = division result 
@@ -90,16 +125,42 @@ MODULE libMath
     ! arg: pose2 - second pose
     FUNC num poseDistance(pose pose1,pose pose2)
         RETURN Distance(pose1.trans,pose2.trans);
-    ENDFUNC     
-    
+    ENDFUNC
+
+    !function used to calculate mid robt (and ortho shift it)
+    ! ret: robtarget = middle robt (with ortho shift if needed)
+    ! arg: robt1 - first robtarget 
+    ! arg: robt2 - second robtarget 
+    ! arg: orthoShift - otrhogonal shift length (if specified)
+    FUNC robtarget robtCalcMidPnt(robtarget robt1,robtarget robt2\num orthoShift)
+        VAR robtarget result;
+        VAR pos vector;
+        VAR pos orthoVector;
+        VAR num dist:=0;
+
+        !remeber orient,extax and config (pos will be changed below)
+        result:=robt2;
+        !calculate vector between robt1 and robt2
+        vector:=vectorCalc(robt1.trans,robt2.trans);
+        dist:=Distance(robt1.trans,robt2.trans);
+        result:=shiftRobtByVector(result,vector,dist/2);
+        !check if user want to otho sift this middle point
+        IF Present(orthoShift) THEN
+            orthoVector:=[-vector.y,vector.x,0];
+            result:=shiftRobtByVector(result,orthoVector,orthoShift);
+        ENDIF
+
+        RETURN result;
+    ENDFUNC
+
     !function used to calulate distance from two robtargets
     ! ret: num = distance between robtargets
     ! arg: robt1 - first robtarget
     ! arg: robt2 - second robtarget
     FUNC num robtDistance(robtarget robt1,robtarget robt2)
         RETURN Distance(robt1.trans,robt2.trans);
-    ENDFUNC    
-    
+    ENDFUNC
+
     !function used to calculate the product of two robtargets
     ! ret: robtarget = product of two robtargets
     ! arg: robt1 - first robtarget to multiply (ORDER IMPORTANT!)
@@ -129,18 +190,6 @@ MODULE libMath
         robT2:=tempRobt;
     ENDPROC
 
-    !function used to get sign from inputted value
-    ! ret: num = sign of value
-    ! arg: val - value to check
-    FUNC num sign(num val)
-        VAR num result:=0;
-
-        IF val>0 result:=1;
-        IF val<0 result:=-1;
-
-        RETURN result;
-    ENDFUNC
-
     !function used to calculate angle between two vector
     ! ret: num = angle between vectors
     ! arg: vec - current vector
@@ -169,7 +218,7 @@ MODULE libMath
 
         RETURN result;
     ENDFUNC
-    
+
     !function used to check if selected vector is parallel to any axis
     ! ret: bool = inputted vector is parallel (TRUE) to any axis
     ! arg: vec - vector to check
@@ -187,7 +236,7 @@ MODULE libMath
         result:=ones=1;
 
         RETURN result;
-    ENDFUNC    
+    ENDFUNC
 
     !function used to caluclate vector definded by two pos
     ! ret: pos = znaleziony wektor
@@ -205,12 +254,12 @@ MODULE libMath
 
         RETURN result;
     ENDFUNC
-    
+
     !function used to count distance between vector and point
     ! ret: num = distance point <-> vector
     ! arg: vector - reference vector to count distance
     ! arg: point - point to count distance
-    FUNC num vectorDistToPoint(pos vector, pos point)
+    FUNC num vectorDistToPoint(pos vector,pos point)
         VAR num result:=-1;
         VAR pos tempVec{2};
 
@@ -221,7 +270,7 @@ MODULE libMath
         result:=VectMagn(crossProd(tempVec{1},tempVec{2}))/VectMagn(vector);
 
         RETURN result;
-    ENDFUNC      
+    ENDFUNC
 
     !function used to inverse inputted vector
     ! ret: pos = vector inversed
@@ -244,6 +293,24 @@ MODULE libMath
         result.x:=vec.x/vecLen;
         result.y:=vec.y/vecLen;
         result.z:=vec.z/vecLen;
+
+        RETURN result;
+    ENDFUNC
+
+    !function used to check if selected point is at the same side of vector as reference 
+    ! ret: bool = point is at the same side as reference (TRUE) or not (FALSE)
+    ! arg: currPos - inputted point to check
+    ! arg: ref - reference point
+    ! arg: vecS - vector start point
+    ! arg: vecE - vector end point
+    FUNC bool vectorSameRefSide(pos currPos,pos ref,pos vecS,pos vecE)
+        VAR bool result;
+        VAR pos crossRes1;
+        VAR pos crossRes2;
+
+        crossRes1:=crossProd(vecE-vecS,currPos-vecS);
+        crossRes2:=crossProd(vecE-vecS,ref-vecS);
+        result:=DotProd(crossRes1,crossRes2)>=0;
 
         RETURN result;
     ENDFUNC
