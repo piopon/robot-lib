@@ -21,7 +21,7 @@ MODULE libRobot
     FUNC bool compareExtax(extjoint eax1,extjoint eax2\num prec)
         VAR bool result;
         VAR num dec:=3;
-         
+
         !check user optional argument
         IF Present(prec) dec:=prec;
         !rounding external axes
@@ -31,8 +31,8 @@ MODULE libRobot
         result:=eax1=eax2;
 
         RETURN result;
-    ENDFUNC    
-    
+    ENDFUNC
+
     !function used to compare two robot axes with specified decimal precision
     ! ret: bool = robot axes are equal (TRUE) or not (FALSE)
     ! arg: robax1 - first robot joint to compare
@@ -41,7 +41,7 @@ MODULE libRobot
     FUNC bool compareRobax(robjoint robax1,robjoint robax2\num prec)
         VAR bool result;
         VAR num dec:=3;
-         
+
         !check user optional argument
         IF Present(prec) dec:=prec;
         !rounding robot axes
@@ -51,8 +51,8 @@ MODULE libRobot
         result:=robax1=robax2;
 
         RETURN result;
-    ENDFUNC      
-    
+    ENDFUNC
+
     !function used to compare two jointtargets with specified decimal precision
     ! ret: bool = jointtargets are equal (TRUE) or not (FALSE)
     ! arg: joint1 - first jointtarget to compare
@@ -61,7 +61,7 @@ MODULE libRobot
     FUNC bool compareJointT(jointtarget joint1,jointtarget joint2\num prec)
         VAR bool result;
         VAR num dec:=3;
-         
+
         !check user optional argument
         IF Present(prec) dec:=prec;
         !rounding jointtargets
@@ -72,7 +72,7 @@ MODULE libRobot
 
         RETURN result;
     ENDFUNC
-    
+
     !function used to compare two orients with specified decimal precision
     ! ret: bool = orients are equal (TRUE) or not (FALSE)
     ! arg: ori1 - first orient to compare
@@ -81,7 +81,7 @@ MODULE libRobot
     FUNC bool compareOri(orient ori1,orient ori2\num prec)
         VAR bool result;
         VAR num dec:=3;
-         
+
         !check user optional argument
         IF Present(prec) dec:=prec;
         !rounding orients
@@ -91,8 +91,8 @@ MODULE libRobot
         result:=ori1=ori2;
 
         RETURN result;
-    ENDFUNC    
-    
+    ENDFUNC
+
     !function used to compare two poses with specified decimal precision
     ! ret: bool = poses are equal (TRUE) or not (FALSE)
     ! arg: pos1 - first pos to compare
@@ -101,7 +101,7 @@ MODULE libRobot
     FUNC bool comparePos(pos pos1,pos pos2\num prec)
         VAR bool result;
         VAR num dec:=3;
-         
+
         !check user optional argument
         IF Present(prec) dec:=prec;
         !rounding poses
@@ -111,8 +111,8 @@ MODULE libRobot
         result:=pos1=pos2;
 
         RETURN result;
-    ENDFUNC  
-    
+    ENDFUNC
+
     !function used to compare two positions with specified decimal precision
     ! ret: bool = positions are equal (TRUE) or not (FALSE)
     ! arg: pose1 - first position to compare
@@ -121,7 +121,7 @@ MODULE libRobot
     FUNC bool comparePose(pose pose1,pose pose2\num prec)
         VAR bool result;
         VAR num dec:=3;
-         
+
         !check user optional argument
         IF Present(prec) dec:=prec;
         !rounding positions
@@ -131,7 +131,7 @@ MODULE libRobot
         result:=pose1=pose2;
 
         RETURN result;
-    ENDFUNC       
+    ENDFUNC
 
     !function used to compare two robtargets with specified decimal precision
     ! ret: bool = robtargets are equal (TRUE) or not (FALSE)
@@ -141,7 +141,7 @@ MODULE libRobot
     FUNC bool compareRobT(robtarget robt1,robtarget robt2\num prec)
         VAR bool result;
         VAR num dec:=3;
-         
+
         !check user optional argument
         IF Present(prec) dec:=prec;
         !rounding robtargets
@@ -151,8 +151,8 @@ MODULE libRobot
         result:=robt1=robt2;
 
         RETURN result;
-    ENDFUNC  
-    
+    ENDFUNC
+
     !function used to compare two workobjects with specified decimal precision
     ! ret: bool = workobjects are equal (TRUE) or not (FALSE)
     ! arg: wobj1 - first workobject to compare
@@ -161,7 +161,7 @@ MODULE libRobot
     FUNC bool compareWobj(wobjdata wobj1,wobjdata wobj2\num prec)
         VAR bool result;
         VAR num dec:=3;
-         
+
         !check user optional argument
         IF Present(prec) dec:=prec;
         !rounding workobjects
@@ -171,8 +171,8 @@ MODULE libRobot
         result:=wobj1=wobj2;
 
         RETURN result;
-    ENDFUNC     
-    
+    ENDFUNC
+
     !===================================================
     !=================  READ VALUES  ===================
     !===================================================     
@@ -192,7 +192,7 @@ MODULE libRobot
 
         RETURN result;
     ENDFUNC
-    
+
     !function to read current robot axes with selected precision (abb function wrapper) 
     ! ret: robjoint = current readed (& rounded) robot axes
     ! arg: robPrec - robot axes read precision
@@ -207,7 +207,7 @@ MODULE libRobot
         result:=roundRobax(tempJointT.robax\robDec:=robPrec);
 
         RETURN result;
-    ENDFUNC    
+    ENDFUNC
 
     !function to read current jointtarget with selected precision (abb function wrapper) 
     ! ret: jointtarget = current readed (& rounded) jointtarget 
@@ -228,7 +228,7 @@ MODULE libRobot
 
         RETURN result;
     ENDFUNC
-    
+
     !function to read current orient with selected precision (abb function wrapper) 
     ! ret: orient = current readed (& rounded) orient
     ! arg: tool - tooldata used to define current orient
@@ -246,7 +246,7 @@ MODULE libRobot
         result:=roundOri(tempRobt.rot\oriDec:=oriPrec);
 
         RETURN result;
-    ENDFUNC    
+    ENDFUNC
 
     !function to read current pos with selected precision (abb function wrapper) 
     ! ret: pos = current readed (& rounded) pos
@@ -315,7 +315,7 @@ MODULE libRobot
 
         RETURN result;
     ENDFUNC
-    
+
     !function to read current workobject with selected precision (abb function wrapper) 
     ! ret: wobjdata = current readed (& rounded) workobject
     ! arg: tool - tooldata used to define current position
@@ -336,7 +336,7 @@ MODULE libRobot
         result:=roundWobj(result\posDec:=posPrec\oriDec:=orientPrec);
 
         RETURN result;
-    ENDFUNC    
+    ENDFUNC
 
     !===================================================
     !===============  ROUND VALUES  ====================
@@ -570,6 +570,57 @@ MODULE libRobot
                                   \RL2:="posDec="+NumToStr(posAcc,0)+", oriDec="+NumToStr(oriAcc,0)+"."
                                   \RL3:="Program continues, but no rounding applied!!!";
         ENDIF
+
+        RETURN result;
+    ENDFUNC
+
+    !===================================================
+    !=================  SAFE ZONES  ====================
+    !===================================================
+
+    !function used to find zone number (from global table in libVars.mod) which contains selected point
+    ! ret: num = number of zone which contains selected pos
+    ! arg: checkPos - position XYZ for wich we want to find parent zone 
+    FUNC num zoneGet(pos byPos)
+        !scan all zones defined in table (libVars)
+        FOR i FROM 1 TO Dim(zones,1) DO
+            !check if point is inside current zone
+            IF zoneCheck(byPos\inside,zones{i}) RETURN zones{i}.ID;
+        ENDFOR
+        !if we are here there is no matching zone
+        RETURN -1;
+    ENDFUNC
+
+    !function used to check if pos is inside/outside selected zone
+    ! ret: bool = point is inside/outside selected zone (TRUE) or not (FALSE)
+    ! arg: point - pos to check
+    ! arg: currZone - zone to check
+    FUNC bool zoneCheck(pos point,\switch inside|switch outside,zone3D currZone)
+        VAR bool result:=TRUE;
+        CONST num cornersNo:=4;
+        VAR num refPointNo;
+        VAR num vecPointNo{2};
+        VAR pos zoneCorners{cornersNo};
+
+        !we have to inspect two zone rectangles (first at XY surface, second at YZ surface)
+        !to determine if selected point is inside/outside our zone3D
+        FOR rectNo FROM 1 TO 2 DO
+            !define current rectangle corners 
+            zoneCorners{1}:=currZone.start.trans;
+            zoneCorners{2}:=poseToPos(relPose(currZone.start,(2-rectNo)*currZone.xLen,0,(rectNo-1)*currZone.zLen));
+            zoneCorners{3}:=poseToPos(relPose(currZone.start,(2-rectNo)*currZone.xLen,currZone.yLen,(rectNo-1)*currZone.zLen));
+            zoneCorners{4}:=poseToPos(relPose(currZone.start,0,currZone.yLen,0));
+            !check if point is inside rectangle defined by corners above
+            FOR i FROM 1 TO cornersNo DO
+                !determine reference and vector points numbers
+                refPointNo:=(i+2)-Trunc((i+2)-1/cornersNo)*cornersNo;
+                vecPointNo{1}:=(i+0)-Trunc((i+0)-1/cornersNo)*cornersNo;
+                vecPointNo{2}:=(i+1)-Trunc((i+1)-1/cornersNo)*cornersNo;
+                result:=vectorSameRefSide(point,zoneCorners{refPointNo},zoneCorners{vecPointNo{1}},zoneCorners{vecPointNo{2}});
+                !if point is nok then return from this function with false
+                IF NOT result RETURN result;
+            ENDFOR
+        ENDFOR
 
         RETURN result;
     ENDFUNC
