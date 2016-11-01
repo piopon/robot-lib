@@ -43,6 +43,29 @@ MODULE libTables
 
         RETURN result;
     ENDFUNC
+    
+    !function used to count bool table elements that are true or false
+    ! ret: num = number of specified elements
+    ! arg: table - table to count specified elements in
+    ! arg: countTrue - input if you want to count all true elements
+    ! arg: countFalse - input if you want to count all false elements
+    FUNC num tableBoolCount(VAR bool table{*}\switch countTrue|switch countFalse)
+        VAR num result;
+        
+        !scan whole table
+        FOR i FROM 1 TO Dim(table,1) DO
+            !check current element and check user input
+            IF table{i}=TRUE AND Present(countTrue) THEN
+                !element true and user wants to count true so increment result
+                Incr result;
+            ELSEIF table{i}=FALSE AND Present(countFalse) THEN
+                !element false and user wants to count false so increment result
+                Incr result;
+            ENDIF
+        ENDFOR
+        
+        RETURN result;
+    ENDFUNC
 
     !function used to concate two tabs into one table (table1 elements are first)
     ! ret: num = number of elements in concated table
@@ -93,7 +116,7 @@ MODULE libTables
     FUNC bool tableNumValExists(num val,num table{*})
         VAR bool result:=FALSE;
 
-        !scan whole table untill we found searched value
+        !scan whole table untill we found searched value (linear search)
         FOR i FROM 1 TO Dim(table,1) DO
             IF result=FALSE THEN
                 IF table{i}=val result:=TRUE;
@@ -103,16 +126,33 @@ MODULE libTables
         RETURN result;
     ENDFUNC
 
-    !function calculating how many zero/empty elements is in table
-    ! ret: num = number of zero/empty elmenets in table
+    !function calculating how many user specified values are in table
+    ! ret: num = number of specified values in table
     ! arg: table - table to check
-    ! arg: zeroElementValue - value which will be considered as zero/empty value
-    FUNC num tableNumCountNonEmpty(num table{*},num zeroElementVal)
+    ! arg: countValue - values to count
+    FUNC num tableNumCount(num table{*},num countVal)
         VAR num result;
 
         !scan whole table and count zero/empty elements
         FOR i FROM 1 TO Dim(table,1) DO
-            IF table{i}<>zeroElementVal Incr result;
+            IF table{i}=countVal Incr result;
+        ENDFOR
+
+        RETURN result;
+    ENDFUNC
+    
+    !function calculating how many zero/empty elements is in table
+    ! ret: num = number of zero/empty elmenets in table
+    ! arg: table - table to check
+    ! arg: zeroElementVal - value which will be considered as zero/empty value
+    FUNC num tableNumCountNonZero(num table{*}\num zeroElementVal)
+        VAR num result;
+        VAR num defaultZeros:=0;
+
+        IF Present(zeroElementVal) defaultZeros:=zeroElementVal;
+        !scan whole table and count zero/empty elements
+        FOR i FROM 1 TO Dim(table,1) DO
+            IF table{i}<>defaultZeros Incr result;
         ENDFOR
 
         RETURN result;
@@ -158,7 +198,7 @@ MODULE libTables
     ! arg: smallest - smallest value in table / element with smallest value in table
     ! arg: value - use this agrument if you want to find biggest/smallest VALUE
     ! arg: elementNo - use this argument if you want to find biggest/smallest value ELEMENT
-    FUNC num tableNumFind(num table{*},\switch biggest|switch smallest,\switch value|switch elementNo)
+    FUNC num tableNumSearchOutermost(num table{*},\switch biggest|switch smallest,\switch value|switch elementNo)
         VAR num result:=0;
         VAR num lowElementVal:=9E9;
         VAR num highElementVal:=-9E9;
@@ -241,13 +281,48 @@ MODULE libTables
         RETURN result;
     ENDFUNC
 
-    !function used to sort numeric table (whole table or user defined part of table)
+    !function used to binary find element index in SORTED table
+    ! ret: num = index of searched element (if -1: no element exists)
+    ! arg: table - table in which we want search value
+    ! arg: value - value to search
+    FUNC num tableNumSearchBinary(INOUT num table{*},num value)
+        VAR num result:=-1;
+        VAR num min;
+        VAR num max;
+        VAR num guessIndex;
+
+        !starting values
+        min:=0;
+        max:=Dim(table,1);
+        guessIndex:=0;
+        !search value untill search set is zero
+        WHILE max>=min DO
+            !get middle index of set
+            guessIndex:=min+Round((max-min)/2);
+            !check if we found our value
+            IF (table{guessIndex}=value) THEN
+                !we got it !
+                RETURN guessIndex;
+            ELSEIF (table{guessIndex}<value) THEN
+                !found value is smaller than mid point
+                min:=guessIndex+1;
+            ELSE
+                !found value is higher than mid point
+                max:=guessIndex-1;
+            ENDIF
+        ENDWHILE
+
+        !element doesnt exist if we are here 
+        RETURN result;
+    ENDFUNC
+
+    !function used to bubble sort numeric table (whole table or user defined part of table)
     ! ret: bool = if sorting process was successfull (TRUE) or not (FALSE)
     ! arg: table - table to sort elements
     ! arg: tableMap - map of sorting process (how elements were reorganized)
     ! arg: fromElementNo - sorting start element (default: first table element)
     ! arg: toElementNo - sorting end element (default: last table element)
-    FUNC bool tableNumSort(INOUT num table{*}\INOUT num tableMap{*}\num fromElementNo\num toElementNo)
+    FUNC bool tableNumSortBubble(INOUT num table{*}\INOUT num tableMap{*}\num fromElementNo\num toElementNo)
         VAR bool result:=FALSE;
         VAR num tableSize;
         VAR num currStartEl;
