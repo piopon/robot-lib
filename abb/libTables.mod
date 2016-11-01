@@ -43,7 +43,7 @@ MODULE libTables
 
         RETURN result;
     ENDFUNC
-    
+
     !function used to count bool table elements that are true or false
     ! ret: num = number of specified elements
     ! arg: table - table to count specified elements in
@@ -51,7 +51,7 @@ MODULE libTables
     ! arg: countFalse - input if you want to count all false elements
     FUNC num tableBoolCount(VAR bool table{*}\switch countTrue|switch countFalse)
         VAR num result;
-        
+
         !scan whole table
         FOR i FROM 1 TO Dim(table,1) DO
             !check current element and check user input
@@ -63,9 +63,89 @@ MODULE libTables
                 Incr result;
             ENDIF
         ENDFOR
-        
+
         RETURN result;
     ENDFUNC
+
+    !function used to calc determinant of inputted matrix
+    ! ret: num = calculated matrix determinant
+    ! arg: m - inputted matrix to calc determinant
+    ! arg: considerSize - size of matrix to calc determinant
+    FUNC num tableNumDeterminant(num m{*,*},num considerSize)
+        VAR num result:=0;
+        VAR num minor{5,5};
+        VAR num methodJ:=1;
+
+        !check if matrix is rectangular
+        IF Dim(m,1)=Dim(m,2) THEN
+            !check if matrix size is big enough for inputted considerSize
+            IF Dim(m,1)>=considerSize THEN
+                !check what size user wants to consider for calculating determinant
+                IF considerSize=1 THEN
+                    !one dimension matrix has only one element
+                    result:=m{1,1};
+                ELSEIF considerSize=2 THEN
+                    !calc two dimension matrix determinant (to speed up calculations - less recursive calls)
+                    result:=m{1,1}*m{2,2}-m{1,2}*m{2,1};
+                ELSEIF considerSize=3 THEN
+                    !calc three dimension matrix determinant (to speed up calculations - less recursive calls)
+                    result:=m{1,1}*m{2,2}*m{3,3}+m{1,2}*m{2,3}*m{3,1}+m{2,1}*m{3,2}*m{1,3}-
+                            m{1,3}*m{2,2}*m{3,1}-m{1,2}*m{2,1}*m{3,3}-m{1,1}*m{2,3}*m{3,2};
+                ELSE
+                    !find determinant using recursive method (with minors)
+                    FOR rowNo FROM 1 TO considerSize DO
+                        !get minor from inputted matrix
+                        tableNumMinor m,rowNo,1,minor;
+                        !calculate determinant from minor
+                        result:=result+Pow(-1,rowNo+methodJ)*m{rowNo,methodJ}*tableNumDeterminant(minor,considerSize-1);
+                    ENDFOR
+                ENDIF
+            ELSE
+                ErrWrite "ERROR::matrixDeterminant","Matrix size must be at least equal to considerSize!";
+                result:=-9E9;
+            ENDIF
+        ELSE
+            ErrWrite "ERROR::matrixDeterminant","Matrix must be rectangular (rows = cols)!";
+            result:=-9E9;
+        ENDIF
+
+        RETURN result;
+    ENDFUNC
+
+    !procedure used to get minor from inputted matrix
+    ! arg: matrix - inputted matrix to get minor from
+    ! arg: delRow - which row we want to exclude from matrix
+    ! arg: delCol - which column we want to exclude from matrix
+    ! arg: minor - result minor 
+    PROC tableNumMinor(num matrix{*,*},num delRow,num delCol,INOUT num minor{*,*})
+        VAR num minorRow:=1;
+        VAR num minorCol:=1;
+
+        !check inputted data
+        IF delRow<=Dim(matrix,1) AND delCol<=Dim(matrix,2) THEN
+            !scan all matrix row
+            FOR cRow FROM 1 TO Dim(matrix,1) DO
+                !if current row isnt excluded scan all elements from it
+                IF cRow<>delRow THEN
+                    !scan all matrix columns
+                    FOR cCol FROM 1 TO Dim(matrix,2) DO
+                        !if current column isnt excluded get it element
+                        IF cCol<>delCol THEN
+                            minor{minorRow,minorCol}:=matrix{cRow,cCol};
+                            !next minor column
+                            Incr minorCol;
+                        ENDIF
+                    ENDFOR
+                    !next minor row
+                    Incr minorRow;
+                    !reset minor column
+                    minorCol:=1;
+                ENDIF
+            ENDFOR
+        ELSE
+            ErrWrite "ERROR::matrixGetMinor","extrudeRow AND/OR extrudeCol is outside matrix dimension.";
+        ENDIF
+    ENDPROC
 
     !function used to concate two tabs into one table (table1 elements are first)
     ! ret: num = number of elements in concated table
@@ -109,23 +189,6 @@ MODULE libTables
         RETURN result;
     ENDFUNC
 
-    !function used to check if element of specified value exist in table
-    ! ret: bool = element with specified value exists in table (TRUE) or not (FALSE)
-    ! arg: val - element value to search
-    ! arg: table - table in wich we want to search
-    FUNC bool tableNumValExists(num val,num table{*})
-        VAR bool result:=FALSE;
-
-        !scan whole table untill we found searched value (linear search)
-        FOR i FROM 1 TO Dim(table,1) DO
-            IF result=FALSE THEN
-                IF table{i}=val result:=TRUE;
-            ENDIF
-        ENDFOR
-
-        RETURN result;
-    ENDFUNC
-
     !function calculating how many user specified values are in table
     ! ret: num = number of specified values in table
     ! arg: table - table to check
@@ -140,7 +203,7 @@ MODULE libTables
 
         RETURN result;
     ENDFUNC
-    
+
     !function calculating how many zero/empty elements is in table
     ! ret: num = number of zero/empty elmenets in table
     ! arg: table - table to check
@@ -192,46 +255,43 @@ MODULE libTables
         ENDIF
     ENDPROC
 
-    !function used to find biggest/smallest value/element in num table
-    ! arg: table - on dimension num table which is inspected for finding specified num
-    ! arg: biggest - biggest value in table / element with biggest value in table
-    ! arg: smallest - smallest value in table / element with smallest value in table
-    ! arg: value - use this agrument if you want to find biggest/smallest VALUE
-    ! arg: elementNo - use this argument if you want to find biggest/smallest value ELEMENT
-    FUNC num tableNumSearchOutermost(num table{*},\switch biggest|switch smallest,\switch value|switch elementNo)
-        VAR num result:=0;
-        VAR num lowElementVal:=9E9;
-        VAR num highElementVal:=-9E9;
+    !function used to calc mean value from all table elements
+    ! ret: num = table mean value
+    ! arg: table - table to calc mean
+    FUNC num tableNumMean(num table{*})
+        !calc mean value
+        RETURN tableNumSum(table)/Dim(table,1);
+    ENDFUNC
 
-        !check if user specified correct optional agruments
-        IF Present(biggest) XOR Present(smallest) THEN
-            IF Present(value) XOR Present(elementNo) THEN
-                !scan whole num table
-                FOR i FROM 1 TO Dim(table,1) DO
-                    !check what we want to find
-                    IF Present(smallest) THEN
-                        !remember smallest value
-                        IF lowElementVal>table{i} THEN
-                            lowElementVal:=table{i};
-                            result:=i;
-                        ENDIF
-                    ELSEIF Present(biggest) THEN
-                        !remember biggest value
-                        IF highElementVal<table{i} THEN
-                            highElementVal:=table{i};
-                            result:=i;
-                        ENDIF
-                    ENDIF
-                ENDFOR
-                !result contains biggest/smallest element number
-                !if we want value we have to get it
-                IF Present(value) result:=table{result};
+    !function used to calc most often value (mode) in table 
+    ! ret: num = table most often value
+    ! arg: table - table to calc mode
+    FUNC num tableNumMode(num table{*})
+        VAR num result:=-9E9;
+        VAR num cIndex;
+        VAR num valIndex;
+        VAR num mapValue{50};
+        VAR num mapCounter{50};
+
+        !fill value and index map with zero values
+        tableNumFill\table1D:=mapValue,-9E9;
+        tableNumFill\table1D:=mapCounter,0;
+        !scan whole table
+        FOR i FROM 1 TO Dim(table,1) DO
+            !check if current element exists in map
+            valIndex:=tableNumSearchLinear(mapValue,table{i});
+            IF valIndex>0 THEN
+                !element exists in map - increment its counter
+                Incr mapCounter{valIndex};
             ELSE
-                ErrWrite "ERROR::tableNumFind","You must specify what to search: value OR element number!";
+                !element doesnt exist - add it to map index and increment index
+                Incr cIndex;
+                Incr mapCounter{cIndex};
+                mapValue{cIndex}:=table{i};
             ENDIF
-        ELSE
-            ErrWrite "ERROR::tableNumFind","You must specify what to search: biggest OR smallest!";
-        ENDIF
+        ENDFOR
+        !find biggest element in map counter
+        result:=mapValue{tableNumSearchOutermost(mapCounter\biggest\elementNo)};
 
         RETURN result;
     ENDFUNC
@@ -313,6 +373,68 @@ MODULE libTables
         ENDWHILE
 
         !element doesnt exist if we are here 
+        RETURN result;
+    ENDFUNC
+
+    !function used to check if element of specified value exist in table
+    ! ret: num = index of element with specified value (-1 if non-existent)
+    ! arg: val - element value to search
+    ! arg: table - table in wich we want to search
+    FUNC num tableNumSearchLinear(num table{*},num val)
+        VAR num result:=-1;
+
+        !scan whole table untill we found searched value (linear search)
+        FOR i FROM 1 TO Dim(table,1) DO
+            IF result=-1 THEN
+                IF table{i}=val result:=i;
+            ENDIF
+        ENDFOR
+
+        RETURN result;
+    ENDFUNC
+
+    !function used to find biggest/smallest value/element in num table
+    ! ret: num = found outermost element index
+    ! arg: table - on dimension num table which is inspected for finding specified num
+    ! arg: biggest - biggest value in table / element with biggest value in table
+    ! arg: smallest - smallest value in table / element with smallest value in table
+    ! arg: value - use this agrument if you want to find biggest/smallest VALUE
+    ! arg: elementNo - use this argument if you want to find biggest/smallest value ELEMENT
+    FUNC num tableNumSearchOutermost(num table{*},\switch biggest|switch smallest,\switch value|switch elementNo)
+        VAR num result:=0;
+        VAR num lowElementVal:=9E9;
+        VAR num highElementVal:=-9E9;
+
+        !check if user specified correct optional agruments
+        IF Present(biggest) XOR Present(smallest) THEN
+            IF Present(value) XOR Present(elementNo) THEN
+                !scan whole num table
+                FOR i FROM 1 TO Dim(table,1) DO
+                    !check what we want to find
+                    IF Present(smallest) THEN
+                        !remember smallest value
+                        IF lowElementVal>table{i} THEN
+                            lowElementVal:=table{i};
+                            result:=i;
+                        ENDIF
+                    ELSEIF Present(biggest) THEN
+                        !remember biggest value
+                        IF highElementVal<table{i} THEN
+                            highElementVal:=table{i};
+                            result:=i;
+                        ENDIF
+                    ENDIF
+                ENDFOR
+                !result contains biggest/smallest element number
+                !if we want value we have to get it
+                IF Present(value) result:=table{result};
+            ELSE
+                ErrWrite "ERROR::tableNumSearchOutermost","You must specify what to search: value OR element number!";
+            ENDIF
+        ELSE
+            ErrWrite "ERROR::tableNumSearchOutermost","You must specify what to search: biggest OR smallest!";
+        ENDIF
+
         RETURN result;
     ENDFUNC
 
@@ -401,6 +523,20 @@ MODULE libTables
                 Decr tableSize;
             ENDWHILE
         ENDIF
+
+        RETURN result;
+    ENDFUNC
+
+    !function used to sum up all table elements
+    ! ret: num = sum of all table elements
+    ! arg: table - table to sum elements
+    FUNC num tableNumSum(num table{*})
+        VAR num result:=0;
+
+        !sum all table elements
+        FOR i FROM 1 TO Dim(table,1) DO
+            result:=result+table{i};
+        ENDFOR
 
         RETURN result;
     ENDFUNC
