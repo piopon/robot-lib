@@ -194,7 +194,7 @@ MODULE libGeometry
     ! ret: pos = intersection point
     ! arg: line1 - line 1
     ! arg: line2 - line 2
-    FUNC pos lineIntersection(line2D line1,line2D line2)
+    FUNC pos lineIntersectLine(line2D line1,line2D line2)
         VAR pos result;
 
         result.y:=(line2.A*line1.B-line1.A*line2.B)/(line2.A-line1.A);
@@ -229,9 +229,9 @@ MODULE libGeometry
             lines{2}:=lineOrthoGet(points{2},points{3});
             lines{3}:=lineOrthoGet(points{3},points{1});
             !calc intersection points between those lines
-            intersect{1}:=lineIntersection(lines{1},lines{2});
-            intersect{2}:=lineIntersection(lines{2},lines{3});
-            intersect{3}:=lineIntersection(lines{3},lines{1});
+            intersect{1}:=lineIntersectLine(lines{1},lines{2});
+            intersect{2}:=lineIntersectLine(lines{2},lines{3});
+            intersect{3}:=lineIntersectLine(lines{3},lines{1});
             !calc middle (center) point
             result.center.x:=(intersect{1}.x+intersect{2}.x+intersect{3}.x)/3;
             result.center.y:=(intersect{1}.y+intersect{2}.y+intersect{3}.y)/3;
@@ -372,7 +372,7 @@ MODULE libGeometry
             vecDist{axisZ}:=Abs(vecAxis{axisZ}.z);
         ENDIF
         !the biggest element in table is the nearest to reference
-        result:=tableNumSearchOutermost(vecDist\biggest\elementNo);
+        result:=tableNumSearchMargin(vecDist\biggest\elementNo);
 
         RETURN result;
     ENDFUNC
@@ -398,7 +398,7 @@ MODULE libGeometry
             ENDIF
         ENDFOR
         !the closest axis has the smallest angle
-        result:=tableNumSearchOutermost(angles\smallest\elementNo);
+        result:=tableNumSearchMargin(angles\smallest\elementNo);
 
         RETURN result;
     ENDFUNC

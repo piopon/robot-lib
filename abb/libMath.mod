@@ -16,6 +16,38 @@ MODULE libMath
     FUNC pos crossProd(pos vec1,pos vec2)
         RETURN [vec1.y*vec2.z-vec1.z*vec2.y,vec1.z*vec2.x-vec1.x*vec2.z,vec1.x*vec2.y-vec1.y*vec2.x];
     ENDFUNC
+    
+    !function used to set value of num depending of condition value
+    ! ret: num = new value dependent of logical value
+    ! arg: condition - logical value which determines output value
+    ! arg: valTrue - output value if condition is true
+    ! arg: valFalse - output value if condition is false
+    FUNC num numLogicValue(bool condition,num valTrue,num valFalse)
+        VAR num result:=0;
+        
+        IF condition THEN
+            result:=valTrue;
+        ELSE
+            result:=valFalse;
+        ENDIF
+        
+        RETURN result;
+    ENDFUNC
+    
+    !function used to calc factorial
+    ! ret: num = calculated factorial
+    ! arg: val - input value
+    FUNC num numFactorial(num val)
+        VAR num result:=0;
+        
+        IF val=0 THEN
+            result:=1;
+        ELSE
+            result:=val*numFactorial(val-1);
+        ENDIF
+        
+        RETURN result;
+    ENDFUNC
 
     !function used to check if selected value is inside set defined by upper and lower limit
     ! ret: bool = checked value is inside (TRUE) or outside (FALSE) of selected set

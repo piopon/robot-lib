@@ -226,18 +226,26 @@ MODULE libTables
     ! arg: table2D - two dimensional tab to fill with value
     ! arg: table3D - three dimensional tab to fill with value
     ! arg: fillValue - value to fill all elements in selected table
-    PROC tableNumFill(\INOUT num table1D{*}|INOUT num table2D{*,*}|INOUT num table3D{*,*,*},num fillValue)
+    PROC tableNumFill(\INOUT num table1D{*}|INOUT num table2D{*,*}|INOUT num table3D{*,*,*},num fillValue\switch increment)
         !sprawdzamy jaka tablice chcemy uzupelnic
         IF Present(table1D) THEN
             !filling one dimensional table 
             FOR i FROM 1 TO Dim(table1D,1) DO
-                table1D{i}:=fillValue;
+                IF Present(increment) THEN
+                    table1D{i}:=fillValue+(i-1);
+                ELSE
+                    table1D{i}:=fillValue;
+                ENDIF
             ENDFOR
         ELSEIF Present(table2D) THEN
             !filling two dimensional table 
             FOR i FROM 1 TO Dim(table2D,1) DO
                 FOR j FROM 1 TO Dim(table2D,2) DO
-                    table2D{i,j}:=fillValue;
+                    IF Present(increment) THEN
+                        table2D{i,j}:=fillValue+(i-1+j-1);
+                    ELSE
+                        table2D{i,j}:=fillValue;
+                    ENDIF
                 ENDFOR
             ENDFOR
         ELSEIF Present(table3D) THEN
@@ -245,7 +253,11 @@ MODULE libTables
             FOR i FROM 1 TO Dim(table3D,1) DO
                 FOR j FROM 1 TO Dim(table3D,2) DO
                     FOR k FROM 1 TO Dim(table3D,3) DO
-                        table3D{i,j,k}:=fillValue;
+                        IF Present(increment) THEN
+                            table3D{i,j,k}:=fillValue+(i-1+j-1+k-1);
+                        ELSE
+                            table3D{i,j,k}:=fillValue;
+                        ENDIF
                     ENDFOR
                 ENDFOR
             ENDFOR
@@ -291,7 +303,7 @@ MODULE libTables
             ENDIF
         ENDFOR
         !find biggest element in map counter
-        result:=mapValue{tableNumSearchOutermost(mapCounter\biggest\elementNo)};
+        result:=mapValue{tableNumSearchMargin(mapCounter\biggest\elementNo)};
 
         RETURN result;
     ENDFUNC
@@ -400,7 +412,7 @@ MODULE libTables
     ! arg: smallest - smallest value in table / element with smallest value in table
     ! arg: value - use this agrument if you want to find biggest/smallest VALUE
     ! arg: elementNo - use this argument if you want to find biggest/smallest value ELEMENT
-    FUNC num tableNumSearchOutermost(num table{*},\switch biggest|switch smallest,\switch value|switch elementNo)
+    FUNC num tableNumSearchMargin(num table{*},\switch biggest|switch smallest,\switch value|switch elementNo)
         VAR num result:=0;
         VAR num lowElementVal:=9E9;
         VAR num highElementVal:=-9E9;
@@ -438,6 +450,52 @@ MODULE libTables
         RETURN result;
     ENDFUNC
 
+    FUNC bool tableNumSortPrepare(num tableSize,num mapSize,INOUT num startEl,INOUT num stopEl)
+        VAR bool result:=FALSE;
+
+        !============= if user want map check it dimension
+        result:=NOT (mapSize>0) OR mapSize=tableSize;
+        !============= which elements has to be sorted
+        IF result THEN
+            !*******************************
+            !check start element number
+            IF startEl<=0 THEN
+                startEl:=1;
+                ErrWrite\W,"WARN::tableNumSortPrepare","Start element is to small!"
+                     \RL2:="Setting start element to table begin...";
+                !continue with sorting
+                result:=TRUE;
+            ENDIF
+            IF startEl>tableSize-1 THEN
+                startEl:=tableSize-1;
+                ErrWrite\W,"WARN::tableNumSortPrepare","Start element is to big"
+                     \RL2:="Setting start element to table end...";
+                !continue with sorting
+                result:=TRUE;
+            ENDIF
+            !*******************************
+            !check end element number
+            IF stopEl<=startEl THEN
+                stopEl:=startEl;
+                ErrWrite\W,"WARN::tableNumSortPrepare","Stop element is less or equal then start element!"
+                     \RL2:="Setting stop element at start element = no need to sort!";
+                !there will be only one element - no sorting is needed
+                result:=FALSE;
+            ENDIF
+            IF stopEl>tableSize THEN
+                stopEl:=tableSize;
+                ErrWrite\W,"WARN::tableNumSortPrepare","Stop element is to big"
+                     \RL2:="Setting stop element to table end...";
+                !continue with sorting
+                result:=TRUE;
+            ENDIF
+            !*******************************
+        ENDIF
+        !====================
+
+        RETURN result;
+    ENDFUNC
+
     !function used to bubble sort numeric table (whole table or user defined part of table)
     ! ret: bool = if sorting process was successfull (TRUE) or not (FALSE)
     ! arg: table - table to sort elements
@@ -446,82 +504,73 @@ MODULE libTables
     ! arg: toElementNo - sorting end element (default: last table element)
     FUNC bool tableNumSortBubble(INOUT num table{*}\INOUT num tableMap{*}\num fromElementNo\num toElementNo)
         VAR bool result:=FALSE;
-        VAR num tableSize;
-        VAR num currStartEl;
-        VAR num currStopEl;
+        VAR num tabSize:=0;
+        VAR num mapSize:=0;
+        VAR num currStartEl:=1;
+        VAR num currStopEl:=1;
 
-        !get inputted table size
-        tableSize:=Dim(table,1);
-        !============= check if user wants to have a map of sorting (new elements position)
-        IF Present(tableMap) THEN
-            !table for element map must be the same size as table to sort
-            IF Dim(tableMap,1)=tableSize THEN
-                FOR i FROM 1 TO tableSize DO
-                    tableMap{i}:=i;
-                ENDFOR
-                result:=TRUE;
-            ELSE
-                result:=FALSE;
-            ENDIF
-        ELSE
-            result:=TRUE;
-        ENDIF
-        !============= which elements has to be sorted
-        IF result THEN
-            !check first element number
-            IF Present(fromElementNo) THEN
-                !check if fist element of sorting is inside table 
-                IF fromElementNo>0 THEN
-                    IF fromElementNo<=tableSize-1 THEN
-                        currStartEl:=fromElementNo;
-                    ELSE
-                        ErrWrite "ERROR::sortTable","!! fromElementNo <= tableSize-1 !!";
-                        result:=FALSE;
-                    ENDIF
-                ELSE
-                    ErrWrite "ERROR::sortTable","!! fromElementNo > 0 !!";
-                    result:=FALSE;
-                ENDIF
-            ELSE
-                !no specified start sort element no = lets start from beginning
-                currStartEl:=1;
-            ENDIF
-            !check end element number
-            IF Present(toElementNo) THEN
-                !check if last element is inside table and is bigger then start element
-                IF toElementNo>0 THEN
-                    IF toElementNo>currStartEl THEN
-                        IF toElementNo>tableSize THEN
-                            currStopEl:=tableSize-1;
-                        ELSE
-                            currStopEl:=toElementNo-1;
-                        ENDIF
-                    ELSE
-                        ErrWrite "ERROR::sortTable","!! toElementNo > fromElementNo !!";
-                        result:=FALSE;
-                    ENDIF
-                ELSE
-                    ErrWrite "ERROR::sortTable","!! toElementNo > 0 !!";
-                    result:=FALSE;
-                ENDIF
-            ELSE
-                !no specified last sort element no = lest end at table end
-                currStopEl:=tableSize-1;
-            ENDIF
-        ENDIF
-        !============= lets sort table
-        IF result THEN
+        !insert startup values 
+        IF Present(tableMap) mapSize:=Dim(tableMap,1);
+        tabSize:=Dim(table,1);
+        currStopEl:=tabSize;
+        !prepare input data
+        IF Present(tableMap) tableNumFill\table1D:=tableMap,1\increment;
+        IF Present(fromElementNo) currStartEl:=fromElementNo;
+        IF Present(toElementNo) currStopEl:=toElementNo;
+        !if everything is ok then start sorting process
+        IF tableNumSortPrepare(tabSize,mapSize,currStartEl,currStopEl) THEN
             !get number of sorting steps to do (and decrement it after every num swap)
-            tableSize:=currStopEl-currStartEl+1;
-            WHILE tableSize>0 DO
+            tabSize:=currStopEl-currStartEl+1;
+            WHILE tabSize>0 DO
                 FOR i FROM currStartEl TO currStopEl DO
                     IF table{i}>table{i+1} THEN
                         numSwap table{i},table{i+1};
                         IF Present(tableMap) numSwap tableMap{i},tableMap{i+1};
                     ENDIF
                 ENDFOR
-                Decr tableSize;
+                Decr tabSize;
             ENDWHILE
+        ENDIF
+
+        RETURN result;
+    ENDFUNC
+
+    !function used to insertion sort numeric table (whole table or user defined part of table)
+    ! ret: bool = if sorting process was successfull (TRUE) or not (FALSE)
+    ! arg: table - table to sort elements
+    ! arg: tableMap - map of sorting process (how elements were reorganized)
+    ! arg: fromElementNo - sorting start element (default: first table element)
+    ! arg: toElementNo - sorting end element (default: last table element)
+    FUNC bool tableNumSortInsertion(INOUT num table{*}\INOUT num tableMap{*}\num fromElementNo\num toElementNo)
+        VAR bool result:=FALSE;
+        VAR num keyVal:=0;
+        VAR num scanNo:=0;
+        VAR num tabSize:=0;
+        VAR num mapSize:=0;
+        VAR num currStartEl:=1;
+        VAR num currStopEl:=1;
+
+        !insert startup values 
+        IF Present(tableMap) mapSize:=Dim(tableMap,1);
+        tabSize:=Dim(table,1);
+        currStopEl:=tabSize;
+        !prepare input data
+        IF Present(tableMap) tableNumFill\table1D:=tableMap,1\increment;
+        IF Present(fromElementNo) currStartEl:=fromElementNo;
+        IF Present(toElementNo) currStopEl:=toElementNo;
+        !if everything is ok then start sorting process
+        IF tableNumSortPrepare(tabSize,mapSize,currStartEl,currStopEl) THEN
+            FOR i FROM currStartEl+1 TO currStopEl DO
+                keyVal:=table{i};
+                scanNo:=i-1;
+                WHILE scanNo>currStartEl AND table{scanNo}>keyVal DO
+                    table{scanNo+1}:=table{scanNo};
+                    table{scanNo}:=keyVal;
+                    Decr scanNo;
+                ENDWHILE
+            ENDFOR
+            !everything is ok when if we are here
+            result:=TRUE;
         ENDIF
 
         RETURN result;
