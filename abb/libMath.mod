@@ -16,7 +16,7 @@ MODULE libMath
     FUNC pos crossProd(pos vec1,pos vec2)
         RETURN [vec1.y*vec2.z-vec1.z*vec2.y,vec1.z*vec2.x-vec1.x*vec2.z,vec1.x*vec2.y-vec1.y*vec2.x];
     ENDFUNC
-    
+
     !function used to set value of num depending of condition value
     ! ret: num = new value dependent of logical value
     ! arg: condition - logical value which determines output value
@@ -24,28 +24,28 @@ MODULE libMath
     ! arg: valFalse - output value if condition is false
     FUNC num numLogicValue(bool condition,num valTrue,num valFalse)
         VAR num result:=0;
-        
+
         IF condition THEN
             result:=valTrue;
         ELSE
             result:=valFalse;
         ENDIF
-        
+
         RETURN result;
     ENDFUNC
-    
+
     !function used to calc factorial
     ! ret: num = calculated factorial
     ! arg: val - input value
     FUNC num numFactorial(num val)
         VAR num result:=0;
-        
+
         IF val=0 THEN
             result:=1;
         ELSE
             result:=val*numFactorial(val-1);
         ENDIF
-        
+
         RETURN result;
     ENDFUNC
 
@@ -85,6 +85,37 @@ MODULE libMath
         ELSE
             !dont know what parity type to check
             result:=FALSE;
+        ENDIF
+
+        RETURN result;
+    ENDFUNC
+
+    !function used to generate random number 
+    ! ret: num = generated random number
+    ! arg: setStart - lowest possible value (default: 0)
+    ! arg: setEnd - highest possible value (default: 1)
+    FUNC num numRandom(\num setStart\num setEnd\switch integer)
+        VAR num result:=1;
+        VAR num cStart:=0;
+        VAR num cStop:=1;
+        VAR num startValue;
+        VAR num coeffA:=16807;
+        VAR num coeffM:=8388608;
+
+        !check user inputted data
+        IF Present(setStart) cStart:=setStart;
+        IF Present(setEnd) cStop:=setEnd;
+        !check what kind of data user want
+        IF Present(integer) THEN
+            !integer - seed by time and use modulo
+            result:=result*(GetTime(\Sec)/GetTime(\Min)+1);
+            result:=Round(coeffA*result\Dec:=0) MOD coeffM;
+            result:=cStart+(result MOD (cStop-cStart+1));
+        ELSE
+            !float - seed by time and cos to get values from 0 to 1
+            result:=result*(GetTime(\Sec)+1);
+            result:=result*(GetTime(\Min)+1);
+            result:=cStart+(0.5+Cos(result)/2)*(cStop-cStart+1);
         ENDIF
 
         RETURN result;

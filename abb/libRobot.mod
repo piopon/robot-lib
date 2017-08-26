@@ -575,6 +575,79 @@ MODULE libRobot
     ENDFUNC
 
     !===================================================
+    !==============  POSITION IN RANGE  ================
+    !===================================================
+
+    !function used to check if inputted robtarget is in range of robot motion
+    ! ret: bool = robtarget is in range (TRUE) or not (FALSE)
+    ! arg: robt - robtarget which we want to check
+    ! arg: tool - tool which is pointing to the position (TCP)
+    ! arg: wobj - workobjest in which we are checking position
+    FUNC bool reachCheckRobt(robtarget robt,PERS tooldata tool,PERS wobjdata wobj)
+        VAR bool result:=TRUE;
+        VAR jointtarget testJoints;
+
+        !calc rob joints to determine if robtarget is in reach
+        testJoints:=CalcJointT(robt,tool\Wobj:=wobj);
+
+        RETURN result;
+    ERROR
+        !check what kind of error occured
+        IF ERRNO=ERR_ROBLIMIT OR ERRNO=ERR_OUTSIDE_REACH THEN
+            !position is outside - result is false
+            result:=FALSE;
+            SkipWarn;
+            TRYNEXT;
+        ENDIF
+    ENDFUNC
+    
+    !function used to check if inputted pose is in range of robot motion
+    ! ret: bool = pose is in range (TRUE) or not (FALSE)
+    ! arg: position - pose which we want to check
+    ! arg: tool - tool which is pointing to the position (TCP)
+    ! arg: wobj - workobjest in which we are checking position
+    FUNC bool reachCheckPose(pose position,PERS tooldata tool,PERS wobjdata wobj)
+        VAR bool result:=TRUE;
+        VAR jointtarget testJoints;
+
+        !calc rob joints to determine if pose is in reach
+        testJoints:=CalcJointT(poseToRobt(position),tool\Wobj:=wobj);
+
+        RETURN result;
+    ERROR
+        !check what kind of error occured
+        IF ERRNO=ERR_ROBLIMIT OR ERRNO=ERR_OUTSIDE_REACH THEN
+            !position is outside - result is false
+            result:=FALSE;
+            SkipWarn;
+            TRYNEXT;
+        ENDIF
+    ENDFUNC    
+    
+    !function used to check if inputted pos is in range of robot motion
+    ! ret: bool = pos is in range (TRUE) or not (FALSE)
+    ! arg: point - pos which we want to check
+    ! arg: tool - tool which is pointing to the position (TCP)
+    ! arg: wobj - workobjest in which we are checking position
+    FUNC bool reachCheckPos(pos point,PERS tooldata tool,PERS wobjdata wobj)
+        VAR bool result:=TRUE;
+        VAR jointtarget testJoints;
+
+        !calc rob joints to determine if pos is in reach
+        testJoints:=CalcJointT(posToRobt(point),tool\Wobj:=wobj);
+
+        RETURN result;
+    ERROR
+        !check what kind of error occured
+        IF ERRNO=ERR_ROBLIMIT OR ERRNO=ERR_OUTSIDE_REACH THEN
+            !position is outside - result is false
+            result:=FALSE;
+            SkipWarn;
+            TRYNEXT;
+        ENDIF
+    ENDFUNC     
+
+    !===================================================
     !=================  SAFE ZONES  ====================
     !===================================================
 

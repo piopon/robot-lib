@@ -79,6 +79,27 @@ MODULE libGeometry
         result:=PoseMult(input,correction);
 
         RETURN result;
+    ENDFUNC   
+    
+    !function used to local correction of robtarget variable (lib-wrapper of RelTool) 
+    ! ret: robtarget = locally corrected robtarget
+    ! arg: input - input robtarget
+    ! arg: x,y,z - trans correction (displacement in mm in X, Y and Z direction)
+    ! arg: Rx,Ry,Rz - orient correction (rotation in deg around X, Y and Z axis)
+    FUNC robtarget relRobt(VAR robtarget input,num x,num y,num z,\num Rx,\num Ry,\num Rz)
+        VAR robtarget result;
+        VAR num finalRx:=0;
+        VAR num finalRy:=0;
+        VAR num finalRz:=0;
+
+        !check optional data provided by user
+        IF Present(Rx) finalRx:=Rx;
+        IF Present(Ry) finalRy:=Ry;
+        IF Present(Rz) finalRz:=Rz;
+        !locally modify input robtarget
+        result:=relTool(input,x,y,z\Rx:=finalRx\Ry:=finalRy\Rz:=finalRz);
+
+        RETURN result;
     ENDFUNC    
 
     !function used to calc local reorientation of pose (in tool coordinate system) [order: Z->Y->X]
@@ -105,6 +126,28 @@ MODULE libGeometry
 
         RETURN result;
     ENDFUNC
+    
+    !function used to calc local reorientation of robtarget (in tool coordinate system) [order: Z->Y->X]
+    ! ret: robtarget = locally rotated robt
+    ! arg: originalRobt - input robtarget to rotate
+    ! arg: xRotDeg - rotation angle (in deg) around axis X
+    ! arg: yRotDeg - rotation angle (in deg) around axis Y
+    ! arg: zRotDeg - rotation angle (in deg) around axis Z
+    FUNC robtarget rotLocalRobtZYX(robtarget originalRobt,\num xRotDeg\num yRotDeg\num zRotDeg)
+        VAR robtarget result;
+        VAR num xRot:=0;
+        VAR num yRot:=0;
+        VAR num zRot:=0;
+
+        !update rotations angles (user selection)
+        IF Present(xRotDeg) xRot:=xRotDeg;
+        IF Present(yRotDeg) yRot:=yRotDeg;
+        IF Present(zRotDeg) zRot:=zRotDeg;
+        !rotate robtarget
+        result:=relTool(originalRobt,0,0,0\Rx:=xRot\Ry:=yRot\Rz:=zRot);
+
+        RETURN result;
+    ENDFUNC    
     
     !function used to calc global reorientation of pose (in wobj coordinate system) [order: Z->Y->X]
     ! ret: pose = globally rotated pose

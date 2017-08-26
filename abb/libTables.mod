@@ -450,7 +450,13 @@ MODULE libTables
         RETURN result;
     ENDFUNC
 
-    FUNC bool tableNumSortPrepare(num tableSize,num mapSize,INOUT num startEl,INOUT num stopEl)
+    !function used to adjust input data (start and stop index, map table size) before sorting table
+    ! ret: bool = all data are adjusted and we can start sorting (TRUE) or not (FALSE)
+    ! arg: tableSize - size of table we want to sort
+    ! arg: mapSize - size of map table (to keep track how elements were sorted)
+    ! arg: startIndex - first sorting element number
+    ! arg: stopIndex - last sorting element number
+    FUNC bool tableNumSortAdjust(num tableSize,num mapSize,INOUT num startIndex,INOUT num stopIndex)
         VAR bool result:=FALSE;
 
         !============= if user want map check it dimension
@@ -459,15 +465,15 @@ MODULE libTables
         IF result THEN
             !*******************************
             !check start element number
-            IF startEl<=0 THEN
-                startEl:=1;
+            IF startIndex<=0 THEN
+                startIndex:=1;
                 ErrWrite\W,"WARN::tableNumSortPrepare","Start element is to small!"
                      \RL2:="Setting start element to table begin...";
                 !continue with sorting
                 result:=TRUE;
             ENDIF
-            IF startEl>tableSize-1 THEN
-                startEl:=tableSize-1;
+            IF startIndex>tableSize-1 THEN
+                startIndex:=tableSize-1;
                 ErrWrite\W,"WARN::tableNumSortPrepare","Start element is to big"
                      \RL2:="Setting start element to table end...";
                 !continue with sorting
@@ -475,15 +481,15 @@ MODULE libTables
             ENDIF
             !*******************************
             !check end element number
-            IF stopEl<=startEl THEN
-                stopEl:=startEl;
+            IF stopIndex<=startIndex THEN
+                stopIndex:=startIndex;
                 ErrWrite\W,"WARN::tableNumSortPrepare","Stop element is less or equal then start element!"
                      \RL2:="Setting stop element at start element = no need to sort!";
                 !there will be only one element - no sorting is needed
                 result:=FALSE;
             ENDIF
-            IF stopEl>tableSize THEN
-                stopEl:=tableSize;
+            IF stopIndex>tableSize THEN
+                stopIndex:=tableSize;
                 ErrWrite\W,"WARN::tableNumSortPrepare","Stop element is to big"
                      \RL2:="Setting stop element to table end...";
                 !continue with sorting
@@ -518,7 +524,7 @@ MODULE libTables
         IF Present(fromElementNo) currStartEl:=fromElementNo;
         IF Present(toElementNo) currStopEl:=toElementNo;
         !if everything is ok then start sorting process
-        IF tableNumSortPrepare(tabSize,mapSize,currStartEl,currStopEl) THEN
+        IF tableNumSortAdjust(tabSize,mapSize,currStartEl,currStopEl) THEN
             !get number of sorting steps to do (and decrement it after every num swap)
             tabSize:=currStopEl-currStartEl+1;
             WHILE tabSize>0 DO
@@ -559,7 +565,7 @@ MODULE libTables
         IF Present(fromElementNo) currStartEl:=fromElementNo;
         IF Present(toElementNo) currStopEl:=toElementNo;
         !if everything is ok then start sorting process
-        IF tableNumSortPrepare(tabSize,mapSize,currStartEl,currStopEl) THEN
+        IF tableNumSortAdjust(tabSize,mapSize,currStartEl,currStopEl) THEN
             FOR i FROM currStartEl+1 TO currStopEl DO
                 keyVal:=table{i};
                 scanNo:=i-1;
@@ -568,6 +574,49 @@ MODULE libTables
                     table{scanNo}:=keyVal;
                     Decr scanNo;
                 ENDWHILE
+            ENDFOR
+            !everything is ok when if we are here
+            result:=TRUE;
+        ENDIF
+
+        RETURN result;
+    ENDFUNC
+
+    !function used to selection sort of numeric table (whole table or user defined part of table)
+    ! ret: bool = if sorting process was successfull (TRUE) or not (FALSE)
+    ! arg: table - table to sort elements
+    ! arg: tableMap - map of sorting process (how elements were reorganized)
+    ! arg: fromElementNo - sorting start element (default: first table element)
+    ! arg: toElementNo - sorting end element (default: last table element)
+    FUNC bool tableNumSortSelection(INOUT num table{*}\INOUT num tableMap{*}\num fromElementNo\num toElementNo)
+        VAR bool result:=FALSE;
+        VAR num minValue;
+        VAR num minIndex;
+        VAR num tabSize:=0;
+        VAR num mapSize:=0;
+        VAR num currStartEl:=1;
+        VAR num currStopEl:=1;
+
+        !insert startup values 
+        IF Present(tableMap) mapSize:=Dim(tableMap,1);
+        tabSize:=Dim(table,1);
+        currStopEl:=tabSize;
+        !prepare input data
+        IF Present(tableMap) tableNumFill\table1D:=tableMap,1\increment;
+        IF Present(fromElementNo) currStartEl:=fromElementNo;
+        IF Present(toElementNo) currStopEl:=toElementNo;
+        !if everything is ok then start sorting process
+        IF tableNumSortAdjust(tabSize,mapSize,currStartEl,currStopEl) THEN
+            FOR cIndex FROM currStartEl TO currStopEl DO
+                minIndex:=cIndex;
+                minValue:=table{cIndex};
+                FOR sIndex FROM cIndex TO currStopEl DO
+                    IF table{sIndex}<minValue THEN
+                        minIndex:=sIndex;
+                        minValue:=table{sIndex};
+                    ENDIF
+                ENDFOR
+                numSwap table{cIndex},table{minIndex};
             ENDFOR
             !everything is ok when if we are here
             result:=TRUE;
